@@ -940,3 +940,14 @@ for test in test_conditions:
     scenario = get_day_scenario(test, {})
 
     print(f"{test['name']}: {scenario}")
+
+    import asyncio
+
+async def send_post():
+    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+        await bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=post
+        )
+
+asyncio.run(send_post())
