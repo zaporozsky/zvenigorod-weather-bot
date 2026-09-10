@@ -3,7 +3,8 @@ name: Zvenigorod weather
 on:
   workflow_dispatch:
   schedule:
-     - cron: "20 5 * * *"
+    - cron: "20 * * * *"
+      timezone: "Europe/Moscow"
 
 jobs:
   weather:
