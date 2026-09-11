@@ -472,17 +472,17 @@ def normalize_weather(weather):
     hourly = []
 
     for hour in forecast_day["hour"]:
-      hourly.append({
-          "time": hour["time"],
-          "temp_c": hour["temp_c"],
-          "precip_mm": hour["precip_mm"],
-           "chance_of_rain": hour["chance_of_rain"],
+        hourly.append({
+            "time": hour["time"],
+            "temp_c": hour["temp_c"],
+            "precip_mm": hour["precip_mm"],
+            "chance_of_rain": hour["chance_of_rain"],
             "chance_of_snow": hour["chance_of_snow"],
-           "will_it_rain": hour["will_it_rain"],
-          "will_it_snow": hour["will_it_snow"],
-           "condition": hour["condition"]["text"],
-          "condition_code": hour["condition"]["code"],
-})
+            "will_it_rain": hour["will_it_rain"],
+            "will_it_snow": hour["will_it_snow"],
+            "condition": hour["condition"]["text"],
+            "condition_code": hour["condition"]["code"],
+        })
 
     return {
         "date": forecast_day["date"],
@@ -494,6 +494,7 @@ def normalize_weather(weather):
         "max_wind": day["maxwind_kph"],
         "humidity": day["avghumidity"],
         "total_precip_mm": day["totalprecip_mm"],
+        "pressure_mb": weather["current"]["pressure_mb"],
         "sunrise": astro["sunrise"],
         "sunset": astro["sunset"],
         "hourly": hourly,
@@ -506,8 +507,63 @@ def get_precipitation_type(forecast, day_scenario):
     return "rain"
 
 
+def format_date_ru(date):
+    months = {
+        1: "января",
+        2: "февраля",
+        3: "марта",
+        4: "апреля",
+        5: "мая",
+        6: "июня",
+        7: "июля",
+        8: "августа",
+        9: "сентября",
+        10: "октября",
+        11: "ноября",
+        12: "декабря",
+    }
+
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+
+    return f"{date_obj.day} {months[date_obj.month]}"
+
+
+def pressure_to_mmhg(pressure_mb):
+    return round(pressure_mb * 0.750062)
+
+
+def format_date_ru(date):
+    months = {
+        1: "января",
+        2: "февраля",
+        3: "марта",
+        4: "апреля",
+        5: "мая",
+        6: "июня",
+        7: "июля",
+        8: "августа",
+        9: "сентября",
+        10: "октября",
+        11: "ноября",
+        12: "декабря",
+    }
+
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+
+    return f"{date_obj.day} {months[date_obj.month]}"
+
+
+def pressure_to_mmhg(pressure_mb):
+    return round(pressure_mb * 0.750062)
+
+
 def make_post(forecast):
     date = forecast["date"]
+    date_text = format_date_ru(date)
+
+    pressure = pressure_to_mmhg(
+        forecast["pressure_mb"]
+    )
 
     precipitation_type = get_precipitation_type(
         forecast,
@@ -530,26 +586,10 @@ def make_post(forecast):
         precipitation_type
     )
 
-    year, month, day = date.split("-")
-
-    months = {
-        "01": "января",
-        "02": "февраля",
-        "03": "марта",
-        "04": "апреля",
-        "05": "мая",
-        "06": "июня",
-        "07": "июля",
-        "08": "августа",
-        "09": "сентября",
-        "10": "октября",
-        "11": "ноября",
-        "12": "декабря",
-    }
-
-    date_text = f"{int(day)} {months[month]}"
-
-    weather_comment = get_editorial_text(day_scenario, forecast)
+    weather_comment = get_editorial_text(
+        day_scenario,
+        forecast
+    )
 
     temp_min = forecast["temp_min"]
     temp_max = forecast["temp_max"]
@@ -567,26 +607,24 @@ def make_post(forecast):
 
     post = f"""Доброе утро, Звенигород! ☀️
 
-{date_text}
+**Погода на** {date_text}
 
 🌡 От +{temp_min:.0f} до +{temp_max:.0f} °C
 ☔ {precipitation_text}
+     **{precipitation_timing}**
 💨 Ветер — до {forecast["max_wind"]:.0f} км/ч
 💧 Влажность — {forecast["humidity"]:.0f}%
-
-{precipitation_timing}
+🧭 Давление — {pressure} мм рт. ст.
 
 {weather_comment}
 
-👕 {clothing}
+{clothing}
 
 🌅 Восход — {forecast["sunrise"]}
 🌇 Закат — {forecast["sunset"]}
-
 """
 
     return post
-
 
 weather = get_weather()
 
