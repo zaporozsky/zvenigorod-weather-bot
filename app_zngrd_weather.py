@@ -3,6 +3,7 @@ import asyncio
 import urllib.parse
 import urllib.request
 import json
+import random
 from datetime import datetime
 
 from telegram import Bot
@@ -15,6 +16,34 @@ CHANNEL_ID = -1004382412226
 # Звенигород, Московская область
 CITY = "Звенигород"
 LOCATION = "55.7352,36.8553"
+GREETING_ICONS = [
+    "☀️",
+    "🌼",
+    "❤️",
+    "💚",
+    "🩵",
+    "🧡",
+    "💜",
+    "🙌",
+]
+
+PHOTO_DIR = "photos"
+
+PHOTO_SCENARIOS = {
+    "sunny_warm": "sunny_warm",
+    "cloudy_comfortable": "cloudy_comfortable",
+    "rainy": "rainy",
+    "small_rain_possible": "small_rain_possible",
+    "snowy": "snowy",
+    "fog": "fog",
+    "cold": "cold",
+    "strong_wind": "strong_wind",
+    "sharp_cooling": "cold",
+    "sharp_warming": "sunny_warm",
+    "unusually_warm": "sunny_warm",
+    "ordinary_calm": "cloudy_comfortable",
+    "very_cold": "cold",
+}
 
 def get_weather():
     params = urllib.parse.urlencode({
@@ -500,6 +529,159 @@ def normalize_weather(weather):
         "hourly": hourly,
     }
 
+def normalize_condition(condition):
+    condition = condition.lower().strip()
+
+    condition_map = {
+        "солнечно": "Ясно",
+        "ясно": "Ясно",
+
+        "малооблачно": "Малооблачно",
+        "переменная облачность": "Малооблачно",
+
+        "облачно": "Облачно",
+        "облачно с прояснениями": "Облачно с прояснениями",
+
+        "пасмурно": "Пасмурно",
+
+        "местами дождь поблизости": "Небольшой дождь",
+        "небольшой дождь": "Небольшой дождь",
+        "небольшой дождь местами": "Небольшой дождь",
+
+        "умеренный дождь": "Дождь",
+        "дождь": "Дождь",
+
+        "сильный дождь": "Сильный дождь",
+
+        "гроза": "Гроза",
+
+        "небольшой снег": "Снег",
+        "снег": "Снег",
+        "умеренный снег": "Снег",
+        "сильный снег": "Сильный снег",
+
+        "туман": "Туман",
+        "дымка": "Дымка",
+    }
+
+    return condition_map.get(condition, condition)
+
+def get_weather_icon(condition, is_night=False):
+
+    if condition == "Ясно":
+        return "🌙" if is_night else "☀️"
+
+    if condition == "Малооблачно":
+        return "🌙" if is_night else "🌤️"
+
+    if condition == "Облачно":
+        return "☁️"
+
+    if condition == "Облачно с прояснениями":
+        return "⛅"
+
+    if condition == "Пасмурно":
+        return "☁️"
+
+    if condition == "Небольшой дождь":
+        return "🌦"
+
+    if condition == "Дождь":
+        return "🌧️"
+
+    if condition == "Сильный дождь":
+        return "🌧️"
+
+    if condition == "Гроза":
+        return "🌩"
+
+    if condition == "Снег":
+        return "❄️"
+
+    if condition == "Сильный снег":
+        return "❄️"
+
+    if condition == "Туман":
+        return "🌫️"
+
+    if condition == "Дымка":
+        return "🌫️"
+
+    return "🌤️"
+
+print("\nТЕСТ ИКОНОК:")
+
+test_icons = [
+    ("Ясно", False),
+    ("Ясно", True),
+    ("Малооблачно", False),
+    ("Малооблачно", True),
+    ("Облачно", False),
+    ("Небольшой дождь", False),
+    ("Дождь", False),
+    ("Гроза", False),
+    ("Снег", False),
+    ("Туман", False),
+]
+
+for condition, is_night in test_icons:
+    print(
+        condition,
+        "ночь" if is_night else "день",
+        "→",
+        get_weather_icon(condition, is_night)
+    )
+
+def get_period_weather(forecast):
+    periods = {
+        "Утром": (6, 9),
+        "Днём": (10, 13),
+        "Вечером": (18, 21),
+        "Ночью": (0, 5),
+    }
+
+    result = []
+
+    for period_name, (start_hour, end_hour) in periods.items():
+        period_hours = []
+
+        for hour in forecast["hourly"]:
+            hour_number = int(hour["time"][11:13])
+
+            if start_hour <= hour_number <= end_hour:
+                period_hours.append(hour)
+
+        if not period_hours:
+            continue
+
+        middle_hour = period_hours[len(period_hours) // 2]
+
+        temp = middle_hour["temp_c"]
+
+        condition = normalize_condition(
+            middle_hour["condition"]
+        )
+
+        is_night = period_name == "Вечером" or period_name == "Ночью"
+
+        weather_icon = get_weather_icon(
+            condition,
+            is_night
+        )
+
+        print(
+            "DEBUG:",
+            period_name,
+            condition,
+            weather_icon
+        )
+
+        result.append(
+            f"{period_name} {temp:+.0f}°  {condition} {weather_icon}"
+        )
+
+    return "\n".join(result)
+
 def get_precipitation_type(forecast, day_scenario):
     if day_scenario == "snowy":
         return "snow"
@@ -560,6 +742,7 @@ def pressure_to_mmhg(pressure_mb):
 def make_post(forecast):
     date = forecast["date"]
     date_text = format_date_ru(date)
+    greeting_icon = random.choice(GREETING_ICONS)
 
     pressure = pressure_to_mmhg(
         forecast["pressure_mb"]
@@ -605,13 +788,12 @@ def make_post(forecast):
     else:
         clothing = "Лучше одеться потеплее."
 
-    post = f"""Доброе утро, Звенигород! ☀️
+    post = f"""Доброе утро, Звенигород! {greeting_icon}
 
-    Погода на {date_text}
+Погода на {date_text}
 
-🌡 От +{temp_min:.0f} до +{temp_max:.0f} °C
-☔ {precipitation_text}
-      {precipitation_timing}
+{get_period_weather(forecast)}
+
 💨 Ветер — до {forecast["max_wind"]:.0f} км/ч
 💧 Влажность — {forecast["humidity"]:.0f}%
 🧭 Давление — {pressure} мм рт. ст.
@@ -781,11 +963,41 @@ VERY_COLD_TEXTS = [
     "Сегодня тот случай, когда холод лучше не недооценивать. Температура будет очень низкой, поэтому стоит хорошо утеплиться и по возможности не планировать долгое пребывание на улице.",
 ]
 
-def get_editorial_text(scenario, forecast):
-    date = datetime.strptime(
-        forecast["date"],
-        "%Y-%m-%d"
+def get_weather_photo(scenario):
+
+    folder_name = PHOTO_SCENARIOS.get(
+        scenario,
+        "default"
     )
+
+    folder = os.path.join(
+        PHOTO_DIR,
+        folder_name
+    )
+
+    if not os.path.exists(folder):
+        folder = os.path.join(
+            PHOTO_DIR,
+            "default"
+        )
+
+    if not os.path.exists(folder):
+        return None
+
+    photos = [
+        os.path.join(folder, filename)
+        for filename in os.listdir(folder)
+        if filename.lower().endswith(
+            (".jpg", ".jpeg", ".png", ".webp")
+        )
+    ]
+
+    if not photos:
+        return None
+
+    return random.choice(photos)
+
+def get_editorial_text(scenario, forecast):
 
     if scenario == "sunny_warm":
         texts = SUNNY_WARM_TEXTS
@@ -825,15 +1037,13 @@ def get_editorial_text(scenario, forecast):
     else:
         return ""
 
-    variant_index = date.timetuple().tm_yday % len(texts)
-
-    text = texts[variant_index]
+    text = random.choice(texts)
 
     return text.format(
         temp_max=forecast["temp_max"]
     )
 
-    return ""
+
 
 editorial_text = get_editorial_text(
     day_scenario,
@@ -841,6 +1051,9 @@ editorial_text = get_editorial_text(
 )
 
 post = make_post(forecast)
+
+print("\nПОГОДА ПО ВРЕМЕНИ СУТОК:")
+print(get_period_weather(forecast))
 
 print("\n" + "=" * 60)
 
@@ -1026,6 +1239,7 @@ test_conditions = [
     },
 ]
 
+
 print("\n" + "=" * 60)
 print("ТЕСТ ПОЧАСОВЫХ ОСАДКОВ")
 print("=" * 60)
@@ -1132,10 +1346,29 @@ for test in test_conditions:
     import asyncio
 
 async def send_post():
+
+    photo_path = get_weather_photo(
+        day_scenario
+    )
+
     async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
-        await bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=post
-        )
+
+        if photo_path:
+
+            with open(photo_path, "rb") as photo:
+
+                await bot.send_photo(
+                    chat_id=CHANNEL_ID,
+                    photo=photo,
+                    caption=post
+                )
+
+        else:
+
+            await bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=post
+            )
+
 
 asyncio.run(send_post())
