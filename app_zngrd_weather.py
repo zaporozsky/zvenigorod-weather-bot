@@ -11,22 +11,29 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
 
 CHANNEL_ID = -1004382412226
-CITY = "Zvenigorod, Moscow Oblast"
-
+# Звенигород, Московская область
+CITY = "Звенигород"
+LOCATION = "55.7352,36.8553"
 
 print("Конфигурация загружена:")
 print(f"Telegram channel ID: {CHANNEL_ID}")
-print(f"City: {CITY}")
+print(f"Город: {CITY}")
+print(f"Координаты: {LOCATION}")
 print("Telegram token: OK")
 print("WeatherAPI key: OK")
 
 def get_weather():
     params = urllib.parse.urlencode({
         "key": WEATHER_API_KEY,
-        "q": CITY,
+        "q": LOCATION,
         "days": 1,
         "lang": "ru",
     })
+
+    url = "https://api.weatherapi.com/v1/forecast.json?" + params
+
+    with urllib.request.urlopen(url) as response:
+        return json.load(response)
 
     url = "https://api.weatherapi.com/v1/forecast.json?" + params
 
@@ -424,6 +431,9 @@ def make_post(forecast):
 
 
 weather = get_weather()
+
+print("\nLocation from WeatherAPI:")
+print(weather["location"])
 
 forecast = normalize_weather(weather)
 
