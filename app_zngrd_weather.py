@@ -1,4 +1,5 @@
 import os
+import asyncio
 import urllib.parse
 import urllib.request
 import json
@@ -14,13 +15,6 @@ CHANNEL_ID = -1004382412226
 # Звенигород, Московская область
 CITY = "Звенигород"
 LOCATION = "55.7352,36.8553"
-
-print("Конфигурация загружена:")
-print(f"Telegram channel ID: {CHANNEL_ID}")
-print(f"Город: {CITY}")
-print(f"Координаты: {LOCATION}")
-print("Telegram token: OK")
-print("WeatherAPI key: OK")
 
 def get_weather():
     params = urllib.parse.urlencode({
@@ -230,6 +224,159 @@ def analyze_temperature_change(forecast):
 
     return "none"
 
+def get_precipitation_probability_text(probability, precipitation_type):
+    if precipitation_type == "snow":
+        if probability <= 10:
+            return "Снега не предвидится"
+        elif probability <= 30:
+            return "Снега, скорее всего, не будет"
+        elif probability <= 50:
+            return "Возможно, пойдет снег"
+        elif probability <= 70:
+            return "Скорее всего, пойдет снег"
+        elif probability <= 90:
+            return "Наверняка выпадет снег"
+        else:
+            return "Пойдет снег"
+
+    else:
+        if probability <= 10:
+            return "Дождя не предвидится"
+        elif probability <= 30:
+            return "Дождя, скорее всего, не будет"
+        elif probability <= 50:
+            return "Возможен дождь"
+        elif probability <= 70:
+            return "Скорее всего, будет дождь"
+        elif probability <= 90:
+            return "Большая вероятность дождя"
+        else:
+            return "Будет дождь"
+
+        
+
+def get_precipitation_timing(forecast, precipitation_type):
+    hourly = forecast["hourly"]
+
+    precipitation_hours = []
+
+    for hour in hourly:
+        hour_number = int(hour["time"][11:13])
+
+        # Ночью не учитываем осадки для основного описания дня.
+        # Они могут быть добавлены отдельно позже, если понадобится.
+        if hour_number < 6:
+            continue
+
+        if precipitation_type == "snow":
+            is_precipitation = (
+                hour["precip_mm"] > 0.1
+                or hour["will_it_snow"] == 1
+                or hour["chance_of_snow"] >= 30
+            )
+        else:
+            is_precipitation = (
+                hour["precip_mm"] > 0.1
+                or hour["will_it_rain"] == 1
+                or hour["chance_of_rain"] >= 30
+            )
+
+        if is_precipitation:
+            precipitation_hours.append(hour)
+
+    if not precipitation_hours:
+        return ""
+
+    # Группируем часы по периодам
+    periods = {
+        "morning": [],
+        "daytime": [],
+        "afternoon": [],
+        "evening": [],
+    }
+
+    for hour in precipitation_hours:
+        hour_number = int(hour["time"][11:13])
+
+        if 6 <= hour_number < 10:
+            periods["morning"].append(hour)
+
+        elif 10 <= hour_number < 14:
+            periods["daytime"].append(hour)
+
+        elif 14 <= hour_number < 18:
+            periods["afternoon"].append(hour)
+
+        elif 18 <= hour_number < 24:
+            periods["evening"].append(hour)
+
+    active_periods = [
+        name
+        for name, hours in periods.items()
+        if hours
+    ]
+
+    total_hours = len(precipitation_hours)
+
+    # Практически весь день
+    if (
+        total_hours >= 8
+        and len(active_periods) >= 3
+    ):
+        return f"{get_precipitation_word(precipitation_type)} на весь день"
+
+    # Только один короткий эпизод
+    if total_hours <= 2:
+        if active_periods == ["morning"]:
+            return f"Утром возможен кратковременный {get_precipitation_word(precipitation_type)}"
+
+        if active_periods == ["daytime"]:
+            return f"Днём возможен кратковременный {get_precipitation_word(precipitation_type)}"
+
+        if active_periods == ["afternoon"]:
+            return f"После обеда возможен кратковременный {get_precipitation_word(precipitation_type)}"
+
+        if active_periods == ["evening"]:
+            return f"Вечером возможен кратковременный {get_precipitation_word(precipitation_type)}"
+
+        if active_periods == ["morning", "evening"]:
+            return f"{get_precipitation_word(precipitation_type).capitalize()} возможен утром и вечером"
+
+    # Несколько периодов
+    if active_periods == ["morning", "evening"]:
+        return f"Осадки возможны утром и вечером"
+
+    if active_periods == ["daytime", "evening"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается днём и вечером"
+
+    if active_periods == ["afternoon", "evening"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается после обеда и вечером"
+
+    if active_periods == ["morning", "daytime", "afternoon", "evening"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} в течение всего дня"
+
+    # Отдельные периоды
+    if active_periods == ["morning"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается утром"
+
+    if active_periods == ["daytime"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается днём"
+
+    if active_periods == ["afternoon"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается после обеда"
+
+    if active_periods == ["evening"]:
+        return f"{get_precipitation_word(precipitation_type).capitalize()} ожидается вечером"
+
+    return ""
+
+
+def get_precipitation_word(precipitation_type):
+    if precipitation_type == "snow":
+        return "снег"
+
+    return "дождь"
+
 def get_day_scenario(forecast, rain_analysis):
     rain = forecast["chance_of_rain"]
     wind = forecast["max_wind"]
@@ -325,15 +472,17 @@ def normalize_weather(weather):
     hourly = []
 
     for hour in forecast_day["hour"]:
-        hourly.append({
-            "time": hour["time"],
-            "temp_c": hour["temp_c"],
-            "precip_mm": hour["precip_mm"],
-            "chance_of_rain": hour["chance_of_rain"],
-            "will_it_rain": hour["will_it_rain"],
-            "condition": hour["condition"]["text"],
-            "condition_code": hour["condition"]["code"],
-        })
+      hourly.append({
+          "time": hour["time"],
+          "temp_c": hour["temp_c"],
+          "precip_mm": hour["precip_mm"],
+           "chance_of_rain": hour["chance_of_rain"],
+            "chance_of_snow": hour["chance_of_snow"],
+           "will_it_rain": hour["will_it_rain"],
+          "will_it_snow": hour["will_it_snow"],
+           "condition": hour["condition"]["text"],
+          "condition_code": hour["condition"]["code"],
+})
 
     return {
         "date": forecast_day["date"],
@@ -350,29 +499,36 @@ def normalize_weather(weather):
         "hourly": hourly,
     }
 
-def make_forecast_text(forecast):
-    rain = forecast["chance_of_rain"]
-    wind = forecast["max_wind"]
-    temp_max = forecast["temp_max"]
-    condition = forecast["condition"]
+def get_precipitation_type(forecast, day_scenario):
+    if day_scenario == "snowy":
+        return "snow"
 
-    if rain >= 60:
-        weather_comment = "Сегодня стоит захватить с собой зонт — вероятность дождя заметная."
-    elif rain >= 30:
-        weather_comment = "Дождь возможен, так что небольшой зонт сегодня не помешает."
-    elif wind >= 30:
-        weather_comment = "День будет довольно ветреным — на открытых местах это почувствуется."
-    elif temp_max >= 25:
-        weather_comment = "Днём будет по-летнему тепло — погода располагает к прогулкам."
-    elif temp_max >= 18:
-        weather_comment = "Днём комфортно и тепло — хороший день для прогулки по Звенигороду."
-    else:
-        weather_comment = "День прохладный, лучше одеться потеплее."
+    return "rain"
 
-    return f"{condition}. {weather_comment}"
 
 def make_post(forecast):
     date = forecast["date"]
+
+    precipitation_type = get_precipitation_type(
+        forecast,
+        day_scenario
+    )
+
+    precipitation_probability = (
+        forecast["chance_of_snow"]
+        if precipitation_type == "snow"
+        else forecast["chance_of_rain"]
+    )
+
+    precipitation_text = get_precipitation_probability_text(
+        precipitation_probability,
+        precipitation_type
+    )
+
+    precipitation_timing = get_precipitation_timing(
+        forecast,
+        precipitation_type
+    )
 
     year, month, day = date.split("-")
 
@@ -414,9 +570,11 @@ def make_post(forecast):
 {date_text}
 
 🌡 От +{temp_min:.0f} до +{temp_max:.0f} °C
-☔ Дождь — {forecast["chance_of_rain"]}%
+☔ {precipitation_text}
 💨 Ветер — до {forecast["max_wind"]:.0f} км/ч
 💧 Влажность — {forecast["humidity"]:.0f}%
+
+{precipitation_timing}
 
 {weather_comment}
 
@@ -431,9 +589,6 @@ def make_post(forecast):
 
 
 weather = get_weather()
-
-print("\nLocation from WeatherAPI:")
-print(weather["location"])
 
 forecast = normalize_weather(weather)
 
@@ -640,29 +795,6 @@ def get_editorial_text(scenario, forecast):
         temp_max=forecast["temp_max"]
     )
 
-
-    variant_index = date.timetuple().tm_yday % len(SUNNY_WARM_TEXTS)
-
-    text = SUNNY_WARM_TEXTS[variant_index]
-
-    return text.format(
-            temp_max=forecast["temp_max"]
-        )
-
-    if scenario == "cloudy_comfortable":
-        date = datetime.strptime(
-            forecast["date"],
-            "%Y-%m-%d"
-        )
-
-        variant_index = date.timetuple().tm_yday % len(CLOUDY_COMFORTABLE_TEXTS)
-
-        text = CLOUDY_COMFORTABLE_TEXTS[variant_index]
-
-        return text.format(
-            temp_max=forecast["temp_max"]
-        )
-
     return ""
 
 editorial_text = get_editorial_text(
@@ -670,101 +802,11 @@ editorial_text = get_editorial_text(
     forecast
 )
 
-
-
-print("\nРедакционный текст:")
-print(editorial_text)
-
-
-
-
-
-print("\nОсновной сценарий дня:")
-print(day_scenario)
-
-print("\nТемпературный уровень:")
-print(temperature_level)
-
-print("\nАнализ дождя:")
-print(rain_analysis)
-
-post = make_post(forecast) 
-print("\nГотовый пост:") 
-print(post)
-
-text = make_forecast_text(forecast)
-
-
-print("\nНормализованный прогноз:")
-print(forecast)
-
-print("\nПогода получена:")
-print(f"Температура сейчас: {weather['current']['temp_c']} °C")
-print(f"Ощущается как: {weather['current']['feelslike_c']} °C")
-print(f"Условия: {weather['current']['condition']['text']}")
-print(f"Влажность: {weather['current']['humidity']}%")
-print(f"Ветер: {weather['current']['wind_kph']} км/ч")
-
-day = weather["forecast"]["forecastday"][0]["day"]
-astro = weather["forecast"]["forecastday"][0]["astro"]
-
-print("\nПрогноз на день:")
-print(f"Температура: от {day['mintemp_c']} до {day['maxtemp_c']} °C")
-print(f"Вероятность дождя: {day['daily_chance_of_rain']}%")
-print(f"Вероятность снега: {day['daily_chance_of_snow']}%")
-print(f"Максимальный ветер: {day['maxwind_kph']} км/ч")
-print(f"Влажность: {day['avghumidity']}%")
-print(f"Описание: {day['condition']['text']}")
-print(f"Восход: {astro['sunrise']}")
-print(f"Закат: {astro['sunset']}")
+post = make_post(forecast)
 
 print("\n" + "=" * 60)
-print("ТЕСТ РЕДАКЦИОННЫХ ТЕКСТОВ")
-print("=" * 60)
 
-test_scenarios = [
-    "sunny_warm",
-    "cloudy_comfortable",
-    "rainy",
-    "small_rain_possible",
-    "strong_wind",
-    "cold",
-    "fog",
-    "sharp_cooling",
-    "sharp_warming",
-    "unusually_warm",
-    "ordinary_calm",
-    "very_cold",
-]
-
-for scenario in test_scenarios:
-    text = get_editorial_text(scenario, forecast)
-
-    print(f"\n[{scenario}]")
-    print(text)
-
-test_scenarios = [
-    "sunny_warm",
-    "cloudy_comfortable",
-    "rainy",
-    "small_rain_possible",
-    "strong_wind",
-    "cold",
-    "fog",
-    "sharp_cooling",
-    "sharp_warming",
-    "unusually_warm",
-    "ordinary_calm",
-    "very_cold",
-]
-
-for scenario in test_scenarios:
-    text = get_editorial_text(scenario, forecast)
-
-    print(f"\n[{scenario}]")
-    print(text)
-
-    print("\n" + "=" * 60)
+print("\n" + "=" * 60)
 print("ТЕСТ ВЫБОРА СЦЕНАРИЕВ")
 print("=" * 60)
 
@@ -945,6 +987,104 @@ test_conditions = [
         "hourly": [],
     },
 ]
+
+print("\n" + "=" * 60)
+print("ТЕСТ ПОЧАСОВЫХ ОСАДКОВ")
+print("=" * 60)
+
+precipitation_tests = [
+    {
+        "name": "Кратковременный дождь днём",
+        "precipitation_type": "rain",
+        "hourly": [
+            {
+                "time": "2026-09-11 12:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 60,
+                "will_it_rain": 1,
+                "chance_of_snow": 0,
+                "will_it_snow": 0,
+            },
+        ],
+    },
+    {
+        "name": "Дождь утром и вечером",
+        "precipitation_type": "rain",
+        "hourly": [
+            {
+                "time": "2026-09-11 08:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 60,
+                "will_it_rain": 1,
+                "chance_of_snow": 0,
+                "will_it_snow": 0,
+            },
+            {
+                "time": "2026-09-11 20:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 60,
+                "will_it_rain": 1,
+                "chance_of_snow": 0,
+                "will_it_snow": 0,
+            },
+        ],
+    },
+    {
+        "name": "Дождь после обеда и вечером",
+        "precipitation_type": "rain",
+        "hourly": [
+            {
+                "time": "2026-09-11 15:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 60,
+                "will_it_rain": 1,
+                "chance_of_snow": 0,
+                "will_it_snow": 0,
+            },
+            {
+                "time": "2026-09-11 20:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 60,
+                "will_it_rain": 1,
+                "chance_of_snow": 0,
+                "will_it_snow": 0,
+            },
+        ],
+    },
+    {
+        "name": "Снег утром и вечером",
+        "precipitation_type": "snow",
+        "hourly": [
+            {
+                "time": "2026-09-11 08:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 0,
+                "will_it_rain": 0,
+                "chance_of_snow": 70,
+                "will_it_snow": 1,
+            },
+            {
+                "time": "2026-09-11 20:00",
+                "precip_mm": 0.3,
+                "chance_of_rain": 0,
+                "will_it_rain": 0,
+                "chance_of_snow": 70,
+                "will_it_snow": 1,
+            },
+        ],
+    },
+]
+
+for test in precipitation_tests:
+    timing = get_precipitation_timing(
+        {
+            "hourly": test["hourly"]
+        },
+        test["precipitation_type"]
+    )
+
+    print(f"\n{test['name']}:")
+    print(timing)
 
 for test in test_conditions:
     scenario = get_day_scenario(test, {})
