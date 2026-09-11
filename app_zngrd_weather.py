@@ -607,11 +607,11 @@ def make_post(forecast):
 
     post = f"""Доброе утро, Звенигород! ☀️
 
-**Погода на** {date_text}
+    Погода на {date_text}
 
 🌡 От +{temp_min:.0f} до +{temp_max:.0f} °C
 ☔ {precipitation_text}
-     **{precipitation_timing}**
+     {precipitation_timing}
 💨 Ветер — до {forecast["max_wind"]:.0f} км/ч
 💧 Влажность — {forecast["humidity"]:.0f}%
 🧭 Давление — {pressure} мм рт. ст.
