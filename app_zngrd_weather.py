@@ -45,6 +45,9 @@ PHOTO_SCENARIOS = {
     "very_cold": "cold",
 }
 
+def format_time_24(time):
+    return datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
+
 def get_weather():
     params = urllib.parse.urlencode({
         "key": WEATHER_API_KEY,
@@ -800,10 +803,9 @@ def make_post(forecast):
 
 {weather_comment}
 
-{clothing}
 
-🌅 Восход — {forecast["sunrise"]}
-🌇 Закат — {forecast["sunset"]}
+🌅 Восход — {format_time_24(forecast["sunrise"])}
+🌇 Закат — {format_time_24(forecast["sunset"])}
 """
 
     return post
@@ -854,7 +856,7 @@ RAINY_TEXTS = [
 
     "Дождь будет, скорее всего, возвращаться несколько раз за день. Непромокаемая куртка и сухая обувь точно пригодятся.",
 
-    "Погода предлагает сбавить темп: дождь местами довольно продолжительный. Для долгих прогулок день не лучший. Но когда нас это останавливало, правда?",
+    "Дождь сегодня, скорее всего, продолжительный. Для долгих прогулок день не лучший. Но когда нас это останавливало, правда?",
 
     "Мокро и прохладно. Дождь будет идти с перерывами, поэтому лучше сразу одеться по погоде.",
 
