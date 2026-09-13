@@ -1355,12 +1355,71 @@ for test in test_conditions:
 
 
 
-def send_max_message(text):
-    url = f"https://platform-api2.max.ru/messages?chat_id={MAX_CHAT_ID}"
+def send_max_message(text, photo_path=None):
 
-    data = json.dumps({
-        "text": text
-    }).encode("utf-8")
+    if photo_path:
+        # 1. Получаем URL для загрузки изображения
+        upload_url = "https://platform-api2.max.ru/uploads?type=image"
+
+        upload_request = urllib.request.Request(
+            upload_url,
+            headers={
+                "Authorization": MAX_BOT_TOKEN
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(
+            upload_request,
+            context=ssl.create_default_context()
+        ) as response:
+            upload_info = json.loads(
+                response.read().decode("utf-8")
+            )
+
+        # 2. Загружаем изображение
+        with open(photo_path, "rb") as photo:
+            file_data = photo.read()
+
+        upload_request = urllib.request.Request(
+            upload_info["url"],
+            data=file_data,
+            headers={
+                "Content-Type": "application/octet-stream"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(
+            upload_request,
+            context=ssl.create_default_context()
+        ) as response:
+            result = json.loads(
+                response.read().decode("utf-8")
+            )
+
+        image_token = result["token"]
+
+        # 3. Формируем сообщение с изображением
+        data = json.dumps({
+            "text": text,
+            "attachments": [
+                {
+                    "type": "image",
+                    "payload": {
+                        "token": image_token
+                    }
+                }
+            ]
+        }).encode("utf-8")
+
+    else:
+        # Сообщение без изображения
+        data = json.dumps({
+            "text": text
+        }).encode("utf-8")
+
+    url = f"https://platform-api2.max.ru/messages?chat_id={MAX_CHAT_ID}"
 
     request = urllib.request.Request(
         url,
@@ -1373,11 +1432,11 @@ def send_max_message(text):
     )
 
     with urllib.request.urlopen(
-    request,
-    context=ssl.create_default_context()
-
-) as response:
+        request,
+        context=ssl.create_default_context()
+    ) as response:
         return response.read().decode("utf-8")
+
 
 async def send_post():
 
@@ -1385,25 +1444,24 @@ async def send_post():
         day_scenario
     )
 
-    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
-
-        if photo_path:
-            with open(photo_path, "rb") as photo:
-                await bot.send_photo(
-                    chat_id=CHANNEL_ID,
-                    photo=photo,
-                    caption=post
-                )
-
-        else:
-            await bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=post
-            )
+#    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+#
+#        if photo_path:
+#            with open(photo_path, "rb") as photo:
+#                await bot.send_photo(
+#                    chat_id=CHANNEL_ID,
+#                    photo=photo,
+#                    caption=post
+#                )
+#
+#        else:
+#            await bot.send_message(
+#                chat_id=CHANNEL_ID,
+#                text=post
+#            )
 
     print("DEBUG: отправляем сообщение в MAX")
-    send_max_message(post)
+    send_max_message(post, photo_path)
     print("DEBUG: сообщение в MAX отправлено")
-
 
 asyncio.run(send_post())
