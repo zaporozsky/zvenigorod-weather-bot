@@ -1403,7 +1403,7 @@ def send_max_message(text, photo_path=None):
         result = json.loads(raw_result)
 
         # 3. Получаем token изображения
-        image_token = result["token"]
+        image_token = next(iter(result["photos"].values()))["token"]
 
         # 4. Формируем сообщение с изображением
         data = json.dumps({
