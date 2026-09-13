@@ -25,6 +25,7 @@ jobs:
         run: |
           python -c "import ssl; print(ssl.get_default_verify_paths())"
           python -c "import certifi; print(certifi.where())"
+          curl -Iv https://platform-api2.max.ru/me
 
       - name: Run weather bot
         env:
