@@ -21,6 +21,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Russian CA certificates
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+
+      - name: Install Russian CA certificates
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo curl -fsSL https://gu-st.ru/content/lending/russian_trusted_root_ca_pem.crt \
+            -o /usr/local/share/ca-certificates/russian_trusted_root_ca.crt
+          sudo curl -fsSL https://gu-st.ru/content/lending/russian_trusted_sub_ca_pem.crt \
+            -o /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt
+          sudo update-ca-certificates
+
       - name: Check SSL certificates
         run: |
           python -c "import ssl; print(ssl.get_default_verify_paths())"
