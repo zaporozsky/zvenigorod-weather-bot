@@ -1,4 +1,6 @@
 import os
+import urllib.request
+import json
 import asyncio
 import urllib.parse
 import urllib.request
@@ -11,6 +13,8 @@ from telegram import Bot
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
+MAX_BOT_TOKEN = os.environ["MAX_BOT_TOKEN"]
+MAX_CHAT_ID = os.environ["MAX_CHAT_ID"]
 
 CHANNEL_ID = -1004382412226
 # Звенигород, Московская область
@@ -1347,7 +1351,27 @@ for test in test_conditions:
 
     print(f"{test['name']}: {scenario}")
 
-    import asyncio
+
+
+def send_max_message(text):
+    url = f"https://platform-api2.max.ru/messages?chat_id={MAX_CHAT_ID}"
+
+    data = json.dumps({
+        "text": text
+    }).encode("utf-8")
+
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": MAX_BOT_TOKEN,
+            "Content-Type": "application/json"
+        },
+        method="POST"
+    )
+
+    with urllib.request.urlopen(request) as response:
+        return response.read().decode("utf-8")
 
 async def send_post():
 
@@ -1355,24 +1379,28 @@ async def send_post():
         day_scenario
     )
 
-    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+#   async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+#
+#      if photo_path:
+#
+#         with open(photo_path, "rb") as photo:
+#
+#                await bot.send_photo(
+#                    chat_id=CHANNEL_ID,
+#                    photo=photo,
+#                    caption=post
+#                )
+#
+#        else:
+#
+#            await bot.send_message(
+#                chat_id=CHANNEL_ID,
+#                text=post
+#            )
 
-        if photo_path:
-
-            with open(photo_path, "rb") as photo:
-
-                await bot.send_photo(
-                    chat_id=CHANNEL_ID,
-                    photo=photo,
-                    caption=post
-                )
-
-        else:
-
-            await bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=post
-            )
+    print("DEBUG: отправляем сообщение в MAX")
+    send_max_message(post)
+    print("DEBUG: сообщение в MAX отправлено")
 
 
 asyncio.run(send_post())
