@@ -5,6 +5,8 @@ import asyncio
 import urllib.parse
 import urllib.request
 import json
+import ssl
+import certifi
 import random
 from datetime import datetime
 
@@ -1370,7 +1372,10 @@ def send_max_message(text):
         method="POST"
     )
 
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(
+    request,
+    context=ssl.create_default_context(cafile=certifi.where())
+) as response:
         return response.read().decode("utf-8")
 
 async def send_post():
