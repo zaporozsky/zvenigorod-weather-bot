@@ -21,6 +21,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check SSL certificates
+        run: |
+          python -c "import ssl; print(ssl.get_default_verify_paths())"
+          python -c "import certifi; print(certifi.where())"
+
+        - name: Run weather bot
+          env:
+
       - name: Run weather bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
