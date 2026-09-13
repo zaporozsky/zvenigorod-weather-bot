@@ -1385,6 +1385,7 @@ def send_max_message(text, photo_path=None):
             upload_info["url"],
             data=file_data,
             headers={
+                "Authorization": MAX_BOT_TOKEN,
                 "Content-Type": "application/octet-stream"
             },
             method="POST"
@@ -1394,13 +1395,17 @@ def send_max_message(text, photo_path=None):
             upload_request,
             context=ssl.create_default_context()
         ) as response:
-            result = json.loads(
-                response.read().decode("utf-8")
-            )
+            raw_result = response.read().decode("utf-8")
 
+        print("DEBUG MAX IMAGE UPLOAD RESPONSE:")
+        print(raw_result)
+
+        result = json.loads(raw_result)
+
+        # 3. Получаем token изображения
         image_token = result["token"]
 
-        # 3. Формируем сообщение с изображением
+        # 4. Формируем сообщение с изображением
         data = json.dumps({
             "text": text,
             "attachments": [
@@ -1436,8 +1441,6 @@ def send_max_message(text, photo_path=None):
         context=ssl.create_default_context()
     ) as response:
         return response.read().decode("utf-8")
-
-
 async def send_post():
 
     photo_path = get_weather_photo(
