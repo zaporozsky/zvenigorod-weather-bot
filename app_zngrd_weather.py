@@ -1385,24 +1385,21 @@ async def send_post():
         day_scenario
     )
 
-#   async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
-#
-#      if photo_path:
-#
-#         with open(photo_path, "rb") as photo:
-#
-#                await bot.send_photo(
-#                    chat_id=CHANNEL_ID,
-#                    photo=photo,
-#                    caption=post
-#                )
-#
-#        else:
-#
-#            await bot.send_message(
-#                chat_id=CHANNEL_ID,
-#                text=post
-#            )
+    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+
+        if photo_path:
+            with open(photo_path, "rb") as photo:
+                await bot.send_photo(
+                    chat_id=CHANNEL_ID,
+                    photo=photo,
+                    caption=post
+                )
+
+        else:
+            await bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=post
+            )
 
     print("DEBUG: отправляем сообщение в MAX")
     send_max_message(post)
