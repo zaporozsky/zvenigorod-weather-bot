@@ -2,4 +2,4 @@
 __pycache__/
 *.pyc
 .env
-*.save
+*.save.DS_Store
