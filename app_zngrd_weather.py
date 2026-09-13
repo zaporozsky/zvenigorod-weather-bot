@@ -1397,9 +1397,6 @@ def send_max_message(text, photo_path=None):
         ) as response:
             raw_result = response.read().decode("utf-8")
 
-        print("DEBUG MAX IMAGE UPLOAD RESPONSE:")
-        print(raw_result)
-
         result = json.loads(raw_result)
 
         # 3. Получаем token изображения
@@ -1447,21 +1444,21 @@ async def send_post():
         day_scenario
     )
 
-#    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
-#
-#        if photo_path:
-#            with open(photo_path, "rb") as photo:
-#                await bot.send_photo(
-#                    chat_id=CHANNEL_ID,
-#                    photo=photo,
-#                    caption=post
-#                )
-#
-#        else:
-#            await bot.send_message(
-#                chat_id=CHANNEL_ID,
-#                text=post
-#            )
+    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+
+        if photo_path:
+            with open(photo_path, "rb") as photo:
+                await bot.send_photo(
+                    chat_id=CHANNEL_ID,
+                    photo=photo,
+                    caption=post
+                )
+
+        else:
+            await bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=post
+            )
 
     print("DEBUG: отправляем сообщение в MAX")
     send_max_message(post, photo_path)
