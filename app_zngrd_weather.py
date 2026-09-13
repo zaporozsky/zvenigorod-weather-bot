@@ -1374,7 +1374,8 @@ def send_max_message(text):
 
     with urllib.request.urlopen(
     request,
-    context=ssl.create_default_context(cafile=certifi.where())
+    context=ssl.create_default_context()
+
 ) as response:
         return response.read().decode("utf-8")
 
