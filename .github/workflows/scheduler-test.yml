@@ -2,8 +2,8 @@ name: Scheduler test
 
 on:
   schedule:
-    - cron: "42 6 * * *"
-      timezone: "Europe/Moscow"
+    - cron: "3 08 * * *"
+
   workflow_dispatch:
 
 jobs:
