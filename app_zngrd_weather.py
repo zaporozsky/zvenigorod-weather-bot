@@ -833,6 +833,26 @@ day_scenario = get_day_scenario(
     rain_analysis
 )
 
+print("\n=== RAIN DIAGNOSTICS ===")
+print("Daily chance of rain:", forecast["chance_of_rain"])
+print("Total precipitation:", forecast["total_precip_mm"])
+print("Rain analysis:", rain_analysis)
+print("Day scenario:", day_scenario)
+
+for hour in forecast["hourly"]:
+    if (
+        hour["precip_mm"] > 0
+        or hour["chance_of_rain"] > 0
+        or "дожд" in hour["condition"].lower()
+    ):
+        print(
+            hour["time"],
+            "|",
+            hour["condition"],
+            "| precip:", hour["precip_mm"],
+            "| chance:", hour["chance_of_rain"]
+        )
+
 
 SUNNY_WARM_TEXTS = [
     "Солнечно и тепло — до +{temp_max:.0f} °C, дождя не ожидается. Хороший день, чтобы провести побольше времени на улице.",
@@ -951,7 +971,7 @@ UNUSUALLY_WARM_TEXTS = [
 ]
 
 ORDINARY_CALM_TEXTS = [
-    "Спокойная погода без сюрпризов. Комфортная температура, без дождя и сильного ветра.",
+    "Спокойная погода без сюрпризов. Комфортная температура, без сильного ветра. Возможны кратковременные осадки.",
 
     "Обычный ровный день. Без жары, дождя и резких перемен — можно не подстраивать планы под погоду.",
 
@@ -1465,4 +1485,4 @@ async def send_post():
     send_max_message(post, photo_path)
     print("DEBUG: сообщение в MAX отправлено")
 
-asyncio.run(send_post())
+#asyncio.run(send_post())
