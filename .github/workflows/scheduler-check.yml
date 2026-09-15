@@ -1,0 +1,12 @@
+name: Scheduler check
+
+on:
+  schedule:
+    - cron: "15 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "SCHEDULE CHECK FIRED at $(date -u)"
