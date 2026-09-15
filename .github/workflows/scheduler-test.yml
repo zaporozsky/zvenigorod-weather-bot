@@ -1,0 +1,14 @@
+name: Scheduler test
+
+on:
+  schedule:
+    - cron: "42 6 * * *"
+      timezone: "Europe/Moscow"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scheduler fired
+        run: echo "SCHEDULE FIRED at $(date -u)"
