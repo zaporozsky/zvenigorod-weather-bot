@@ -3,8 +3,7 @@ name: Zvenigorod weather
 on:
   workflow_dispatch:
   schedule:
-    - cron: "37 6 * * *"
-      timezone: "Europe/Moscow"
+    - cron: "37 3 * * *"
 
 jobs:
   weather:
@@ -22,11 +21,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install Russian CA certificates
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates
-          sudo update-ca-certificates
+      #- name: Install Russian CA certificates
+      #  run: |
+      #    sudo apt-get update
+      #    sudo apt-get install -y ca-certificates
+      #    sudo update-ca-certificates
 
       - name: Install Russian CA certificates
         run: |
