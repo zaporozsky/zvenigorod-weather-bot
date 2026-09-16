@@ -1485,4 +1485,4 @@ async def send_post():
     send_max_message(post, photo_path)
     print("DEBUG: сообщение в MAX отправлено")
 
-#asyncio.run(send_post())
+asyncio.run(send_post())
