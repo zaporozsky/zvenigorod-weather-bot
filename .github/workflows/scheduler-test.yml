@@ -1,0 +1,22 @@
+name: Scheduler Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      scheduler:
+        description: "Scheduler name"
+        required: true
+        default: "manual"
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SCHEDULER: ${{ inputs.scheduler }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run scheduler test
+        run: python scheduler_test.py
