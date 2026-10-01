@@ -19,6 +19,7 @@ MAX_BOT_TOKEN = os.environ["MAX_BOT_TOKEN"]
 MAX_CHAT_ID = os.environ["MAX_CHAT_ID"]
 
 CHANNEL_ID = -1004382412226
+NEWS_CHANNEL_ID = "@svoi_zvenigorod"
 # Звенигород, Московская область
 CITY = "Звенигород"
 LOCATION = "55.7352,36.8553"
@@ -1467,19 +1468,20 @@ async def send_post():
 
     async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
 
-        if photo_path:
-            with open(photo_path, "rb") as photo:
-                await bot.send_photo(
-                    chat_id=CHANNEL_ID,
-                    photo=photo,
-                    caption=post
-                )
+        for channel_id in (CHANNEL_ID, NEWS_CHANNEL_ID):
+            if photo_path:
+                with open(photo_path, "rb") as photo:
+                    await bot.send_photo(
+                        chat_id=channel_id,
+                        photo=photo,
+                        caption=post
+                    )
 
-        else:
-            await bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=post
-            )
+            else:
+                await bot.send_message(
+                    chat_id=channel_id,
+                    text=post
+                )
 
     print("DEBUG: отправляем сообщение в MAX")
     send_max_message(post, photo_path)
