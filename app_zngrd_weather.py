@@ -17,6 +17,7 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
 MAX_BOT_TOKEN = os.environ["MAX_BOT_TOKEN"]
 MAX_CHAT_ID = os.environ["MAX_CHAT_ID"]
+MAX_NEWS_CHAT_ID = os.environ["MAX_NEWS_CHAT_ID"]
 
 CHANNEL_ID = -1004382412226
 NEWS_CHANNEL_ID = "@svoi_zvenigorod"
@@ -1443,23 +1444,28 @@ def send_max_message(text, photo_path=None):
             "text": text
         }).encode("utf-8")
 
-    url = f"https://platform-api2.max.ru/messages?chat_id={MAX_CHAT_ID}"
+    responses = []
 
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={
-            "Authorization": MAX_BOT_TOKEN,
-            "Content-Type": "application/json"
-        },
-        method="POST"
-    )
+    for chat_id in (MAX_CHAT_ID, MAX_NEWS_CHAT_ID):
+        url = f"https://platform-api2.max.ru/messages?chat_id={chat_id}"
 
-    with urllib.request.urlopen(
-        request,
-        context=ssl.create_default_context()
-    ) as response:
-        return response.read().decode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=data,
+            headers={
+                "Authorization": MAX_BOT_TOKEN,
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(
+            request,
+            context=ssl.create_default_context()
+        ) as response:
+            responses.append(response.read().decode("utf-8"))
+
+    return responses
 async def send_post():
 
     photo_path = get_weather_photo(
