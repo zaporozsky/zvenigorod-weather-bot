@@ -11,7 +11,7 @@ jobs:
         env:
           MAX_BOT_TOKEN: ${{ secrets.MAX_BOT_TOKEN }}
         run: |
-          curl -sS \
+          curl -ksS \
             -H "Authorization: $MAX_BOT_TOKEN" \
             "https://platform-api2.max.ru/updates?limit=100" \
             | python3 -m json.tool
