@@ -60,7 +60,7 @@ class BotAdviceIntegrationTests(unittest.TestCase):
         self.assertTrue(comment.strip())
         self.assertLessEqual(len(comment.encode("utf-16-le")) // 2, 180)
         self.assertNotRegex(comment, r"\d")
-        self.assertLessEqual(len(re.findall(r"[.!?…]+(?:\s|$)", comment)), 1)
+        self.assertLessEqual(len(re.findall(r"[.!?…]+(?:\s|$)", comment)), 2)
         self.assertNotRegex(comment.lower(), r"прогул|маршрут|план|\bдом\w*|занят|уют|\bдел[ао]\b")
 
     def execute_bot(self, kind, advice, wind=10):
@@ -154,9 +154,13 @@ class BotAdviceIntegrationTests(unittest.TestCase):
         return post
 
     def test_generated_advice_used_once_and_shared_by_all_channels(self):
-        advice = "После обеда возможен дождь, зонт пригодится."
-        post = self.execute_bot("rain", advice)
-        self.assertEqual(post.count(advice), 1)
+        for advice in (
+            "После обеда возможен дождь, зонт пригодится.",
+            "После обеда возможен дождь. Зонт будет не лишним.",
+        ):
+            with self.subTest(advice=advice):
+                post = self.execute_bot("rain", advice)
+                self.assertEqual(post.count(advice), 1)
 
     def test_maximum_advice_fits_telegram_photo_caption(self):
         advice = "А" * 180
@@ -187,6 +191,7 @@ class BotAdviceIntegrationTests(unittest.TestCase):
                 self.assertGreaterEqual(len(variants), 2)
                 for comment in variants:
                     self.assert_short_weather_comment(comment)
+                    self.assertLessEqual(len(re.findall(r"[.!?…]+(?:\s|$)", comment)), 1)
 
 
 if __name__ == "__main__":
