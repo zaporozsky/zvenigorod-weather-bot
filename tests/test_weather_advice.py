@@ -44,7 +44,6 @@ def completion(content=None, finish_reason="stop"):
     if content is None:
         content = json.dumps({
             "weather_advice": "После обеда возможен дождь, зонт пригодится.",
-            "day_advice": "Утро подойдёт для приятной прогулки.",
         }, ensure_ascii=False)
     return {"choices": [{"finish_reason": finish_reason, "message": {"content": content}}]}
 
@@ -100,7 +99,7 @@ class WeatherAdviceTests(unittest.TestCase):
         client.assert_called_once_with(timeout=15.0, follow_redirects=False)
         self.assertEqual(output.getvalue(), "")
         self.assertEqual(self.forecast, original)
-        self.assertEqual(result, "После обеда возможен дождь, зонт пригодится. Утро подойдёт для приятной прогулки.")
+        self.assertEqual(result, "После обеда возможен дождь, зонт пригодится.")
         self.assertNotIn("\n", result)
         self.assertLessEqual(len(result), 180)
 
@@ -160,18 +159,18 @@ class WeatherAdviceTests(unittest.TestCase):
             [], {}, {"choices": []}, {"choices": [None]},
             {"choices": [{"message": {"content": 123}, "finish_reason": "stop"}]},
             completion("not JSON"), completion("[]"), completion("null"),
-            completion(json.dumps({"weather_advice": "Одежда"})),
-            completion(json.dumps({"weather_advice": " ", "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": 123, "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "Одежда", "day_advice": "План", "extra": "Нет"})),
-            completion(json.dumps({"weather_advice": "а" * 176, "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "☀️" * 150, "day_advice": "☀️" * 100})),
-            completion(json.dumps({"weather_advice": "😀" * 190, "day_advice": "😀" * 30})),
-            completion(json.dumps({"weather_advice": "**Куртка**", "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "<b>Куртка</b>", "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "- Куртка", "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "Куртка\nЗонт", "day_advice": "План"})),
-            completion(json.dumps({"weather_advice": "Куртка\u200b", "day_advice": "План"})),
+            completion(json.dumps({"weather_advice": " "})),
+            completion(json.dumps({"weather_advice": 123})),
+            completion(json.dumps({"weather_advice": "Одежда", "day_advice": "План"})),
+            completion(json.dumps({"weather_advice": "Одежда", "extra": "Нет"})),
+            completion(json.dumps({"weather_advice": "а" * 181})),
+            completion(json.dumps({"weather_advice": "☀️" * 150})),
+            completion(json.dumps({"weather_advice": "😀" * 100})),
+            completion(json.dumps({"weather_advice": "**Куртка**"})),
+            completion(json.dumps({"weather_advice": "<b>Куртка</b>"})),
+            completion(json.dumps({"weather_advice": "- Куртка"})),
+            completion(json.dumps({"weather_advice": "Куртка\nЗонт"})),
+            completion(json.dumps({"weather_advice": "Куртка\u200b"})),
             completion(finish_reason="length"),
         ]
         for response in invalid:
@@ -180,11 +179,10 @@ class WeatherAdviceTests(unittest.TestCase):
                 self.assertIsNone(result)
 
     def test_exact_length_limit_is_accepted_but_one_more_character_is_rejected(self):
-        for weather_length, accepted in ((175, True), (176, False)):
+        for weather_length, accepted in ((180, True), (181, False)):
             with self.subTest(weather_length=weather_length):
                 response = completion(json.dumps({
                     "weather_advice": "а" * weather_length,
-                    "day_advice": "План",
                 }))
                 result, _ = self.generate(lambda request: httpx.Response(200, json=response))
                 self.assertEqual(result is not None, accepted)
@@ -196,27 +194,25 @@ class WeatherAdviceTests(unittest.TestCase):
             "Температура до +13°C.",
             "Сильный ветер до 35 км/ч.",
             "Дождь с вероятностью 70%.",
-            "Утром прохладно. Днём потеплеет.",
+            "Утром прохладно. Днём потеплеет. Вечером дождь.",
         ):
             with self.subTest(weather=weather):
                 response = completion(json.dumps({
                     "weather_advice": weather,
-                    "day_advice": "Утро подойдёт для прогулки.",
                 }))
                 result, _ = self.generate(lambda request: httpx.Response(200, json=response))
                 self.assertIsNone(result)
 
     def test_strong_wind_cannot_be_omitted_from_weather_advice(self):
         cases = (
-            (29.9, "Дождь маловероятен.", "Утро подойдёт для прогулки.", True),
-            (30, "Дождь маловероятен.", "Утро подойдёт для прогулки.", False),
-            (35, "Дождь маловероятен.", "Сильный ветер, лучше короткая прогулка.", False),
-            (30, "Сегодня сильный ветер, пригодится непродуваемая куртка.",
-             "Для прогулки подойдёт защищённое от ветра место.", True),
+            (29.9, "Дождь маловероятен.", True),
+            (30, "Дождь маловероятен.", False),
+            (30, "Сегодня сильный ветер, пригодится непродуваемая куртка.", True),
+            (35, "Возможен дождь. Сегодня сильный ветер, пригодится куртка с капюшоном.", True),
         )
-        for wind, weather, day, accepted in cases:
-            with self.subTest(wind=wind, weather=weather, day=day):
-                response = completion(json.dumps({"weather_advice": weather, "day_advice": day}))
+        for wind, weather, accepted in cases:
+            with self.subTest(wind=wind, weather=weather):
+                response = completion(json.dumps({"weather_advice": weather}))
                 result, _ = self.generate(
                     lambda request: httpx.Response(200, json=response),
                     dict(self.forecast, max_wind=wind),

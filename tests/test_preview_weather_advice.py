@@ -1,3 +1,4 @@
+from datetime import date
 import json
 import os
 import unittest
@@ -9,6 +10,30 @@ import preview_weather_advice as preview
 
 
 class PreviewSafetyTests(unittest.TestCase):
+    def test_synthetic_cases_include_rainy_monday_and_strong_wind_with_rain(self):
+        cases = preview.synthetic_forecasts()
+        self.assertEqual(len(cases), 6)
+        for case in cases:
+            with self.subTest(scenario=case["name"]):
+                forecast = case["forecast"]
+                self.assertIsNotNone(preview.weather_advice._forecast_facts(forecast, "Звенигород"))
+                self.assertEqual(len(forecast["hourly"]), 24)
+                self.assertTrue(all(hour["time"].startswith(forecast["date"]) for hour in forecast["hourly"]))
+
+        monday = next(case["forecast"] for case in cases if case["forecast"]["date"] == "2026-10-12")
+        self.assertEqual(date.fromisoformat(monday["date"]).weekday(), 0)
+        self.assertIn("Пасмурно", monday["condition"])
+        self.assertIn("небольшой дождь", monday["condition"])
+        rainy_hours = [hour for hour in monday["hourly"] if hour["will_it_rain"]]
+        self.assertTrue(rainy_hours)
+        self.assertLess(len(rainy_hours), 24)
+        self.assertTrue(all(0 < hour["precip_mm"] < 0.4 for hour in rainy_hours))
+
+        wind_and_rain = next(case["forecast"] for case in cases if case["name"] == "Сильный ветер и дождь")
+        self.assertGreaterEqual(wind_and_rain["max_wind"], 30)
+        self.assertGreater(wind_and_rain["chance_of_rain"], 0)
+        self.assertTrue(any(hour["will_it_rain"] and hour["precip_mm"] > 0 for hour in wind_and_rain["hourly"]))
+
     def test_publishing_and_other_endpoints_are_blocked_before_transport(self):
         requests = []
         with preview.OpenAIOnlyClient(transport=httpx.MockTransport(
@@ -40,7 +65,6 @@ class PreviewSafetyTests(unittest.TestCase):
                 "finish_reason": "stop",
                 "message": {"content": json.dumps({
                     "weather_advice": weather,
-                    "day_advice": "Вечер подойдёт для любимых занятий дома.",
                 })},
             }]})
 
@@ -51,8 +75,9 @@ class PreviewSafetyTests(unittest.TestCase):
             preview, "OpenAIOnlyClient", side_effect=factory
         ):
             results = preview.run_preview()
-        self.assertEqual(len(requests), 4)
-        self.assertEqual([result["http_status"] for result in results], [200, 200, 401, 200])
+        self.assertEqual(len(requests), 6)
+        self.assertEqual([result["http_status"] for result in results], [200, 200, 401, 200, 200, 200])
+        self.assertEqual([result["status"] for result in results], ["generated", "generated", "failed", "generated", "generated", "generated"])
         self.assertEqual(results[2]["status"], "failed")
         self.assertIsNone(results[2]["comment"])
         self.assertNotIn("private-key", json.dumps(results))

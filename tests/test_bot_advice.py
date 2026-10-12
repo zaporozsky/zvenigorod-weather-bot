@@ -1,8 +1,10 @@
+import ast
 import contextlib
 import io
 import json
 import os
 from pathlib import Path
+import re
 import runpy
 import unittest
 from unittest.mock import patch
@@ -54,6 +56,13 @@ def weather_response(kind, wind=10):
 
 
 class BotAdviceIntegrationTests(unittest.TestCase):
+    def assert_short_weather_comment(self, comment):
+        self.assertTrue(comment.strip())
+        self.assertLessEqual(len(comment.encode("utf-16-le")) // 2, 180)
+        self.assertNotRegex(comment, r"\d")
+        self.assertLessEqual(len(re.findall(r"[.!?…]+(?:\s|$)", comment)), 1)
+        self.assertNotRegex(comment.lower(), r"прогул|маршрут|план|\bдом\w*|занят|уют|\bдел[ао]\b")
+
     def execute_bot(self, kind, advice, wind=10):
         telegram_posts = []
         max_posts = []
@@ -123,9 +132,15 @@ class BotAdviceIntegrationTests(unittest.TestCase):
         self.assertLessEqual(len(post.encode("utf-16-le")) // 2, 1024)
         self.assertIn("Доброе утро, Звенигород!", post)
         self.assertIn("Восход — 07:00", post)
+        comment = post.split("мм рт. ст.\n\n", 1)[1].split("\n\n", 1)[0]
+        self.assert_short_weather_comment(comment)
         if advice is None and wind >= 30:
-            self.assertIn("сильный ветер", post)
-            self.assertIn("Для прогулки подойдёт защищённое от ветра место", post)
+            self.assertIn("сильный ветер", comment.lower())
+            if kind in ("rain", "snow"):
+                self.assertIn("дождь" if kind == "rain" else "снег", comment)
+                self.assertIn("капюшон", comment)
+            else:
+                self.assertEqual(comment, "Сегодня сильный ветер, пригодится непродуваемая куртка.")
         elif advice is None:
             expected_list = {
                 "dry": "ORDINARY_CALM_TEXTS",
@@ -139,7 +154,7 @@ class BotAdviceIntegrationTests(unittest.TestCase):
         return post
 
     def test_generated_advice_used_once_and_shared_by_all_channels(self):
-        advice = "После обеда возможен дождь, зонт пригодится. Утро подойдёт для приятной прогулки."
+        advice = "После обеда возможен дождь, зонт пригодится."
         post = self.execute_bot("rain", advice)
         self.assertEqual(post.count(advice), 1)
 
@@ -156,6 +171,22 @@ class BotAdviceIntegrationTests(unittest.TestCase):
         for kind in ("dry", "rain", "snow"):
             with self.subTest(kind=kind):
                 self.execute_bot(kind, None, wind=35)
+
+    def test_every_fallback_variant_is_one_short_weather_phrase(self):
+        tree = ast.parse((ROOT / "app_zngrd_weather.py").read_text())
+        lists = {
+            node.targets[0].id: ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id.endswith("_TEXTS")
+        }
+        self.assertEqual(len(lists), 13)
+        for name, variants in lists.items():
+            with self.subTest(scenario=name):
+                self.assertGreaterEqual(len(variants), 2)
+                for comment in variants:
+                    self.assert_short_weather_comment(comment)
 
 
 if __name__ == "__main__":
