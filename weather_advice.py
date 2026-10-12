@@ -11,7 +11,7 @@ import httpx
 
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_MODEL = "gpt-4.1"
 REQUEST_TIMEOUT = 15.0
 MAX_ADVICE_LENGTH = 180
 

@@ -75,7 +75,7 @@ class WeatherAdviceTests(unittest.TestCase):
             self.assertEqual(request.headers["Authorization"], "Bearer test-key")
             self.assertEqual(request.method, "POST")
             payload = json.loads(request.content)
-            self.assertEqual(payload["model"], "gpt-4.1-mini")
+            self.assertEqual(payload["model"], "gpt-4.1")
             self.assertEqual(payload["response_format"], {"type": "json_object"})
             facts = json.loads(payload["messages"][1]["content"])
             self.assertEqual(facts["city"], "Звенигород")
@@ -111,11 +111,11 @@ class WeatherAdviceTests(unittest.TestCase):
     def test_openai_key_fallback_and_custom_model(self):
         def handler(request):
             self.assertEqual(request.headers["Authorization"], "Bearer existing-key")
-            self.assertEqual(json.loads(request.content)["model"], "gpt-4.1")
+            self.assertEqual(json.loads(request.content)["model"], "gpt-4.1-mini")
             return httpx.Response(200, json=completion())
 
         with patch.dict(os.environ, {
-            "LLM_API_KEY": " ", "OPENAI_API_KEY": "existing-key", "LLM_MODEL": "gpt-4.1"
+            "LLM_API_KEY": " ", "OPENAI_API_KEY": "existing-key", "LLM_MODEL": "gpt-4.1-mini"
         }, clear=True):
             result, _ = self.generate(handler)
         self.assertIsNotNone(result)
