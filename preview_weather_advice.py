@@ -3,10 +3,34 @@
 from functools import partial
 import json
 import os
+import unicodedata
 
 import httpx
 
 import weather_advice
+
+
+MAX_CANDIDATE_LENGTH = 500
+
+
+def candidate_comment(response):
+    """Extract only a bounded comment, never response bodies or error details."""
+    try:
+        content = response.json()["choices"][0]["message"]["content"]
+        decoded = json.loads(content)
+    except (ValueError, TypeError, KeyError, IndexError, httpx.ResponseNotRead):
+        return None
+    if not isinstance(decoded, dict):
+        return None
+    comment = decoded.get("weather_advice")
+    if not isinstance(comment, str) or not 0 < len(comment) <= MAX_CANDIDATE_LENGTH:
+        return None
+    if any(
+        unicodedata.category(char).startswith("C") or char in "\u2028\u2029"
+        for char in comment
+    ):
+        return None
+    return comment if comment.strip() else None
 
 
 class OpenAIOnlyClient(httpx.Client):
@@ -22,6 +46,11 @@ class OpenAIOnlyClient(httpx.Client):
             raise RuntimeError("Preview permits only OpenAI comment generation")
         response = super().send(request, **kwargs)
         self.observation["http_status"] = response.status_code
+        self.observation.pop("candidate_comment", None)
+        if response.status_code == 200:
+            candidate = candidate_comment(response)
+            if candidate is not None:
+                self.observation["candidate_comment"] = candidate
         return response
 
 
@@ -97,13 +126,18 @@ def run_preview():
             observation = {}
             weather_advice.httpx.Client = partial(OpenAIOnlyClient, observation=observation)
             advice = weather_advice.generate_weather_advice(case["forecast"])
-            results.append({
+            result = {
                 "scenario": case["name"],
                 "http_status": observation.get("http_status"),
                 "status": "generated" if advice else "failed",
                 "comment": advice,
                 "length": len(advice.encode("utf-16-le")) // 2 if advice else None,
-            })
+            }
+            if advice is None and observation.get("http_status") == 200:
+                candidate = observation.get("candidate_comment")
+                if candidate is not None:
+                    result["candidate_comment"] = candidate
+            results.append(result)
     finally:
         weather_advice.httpx.Client = original_client
     return results

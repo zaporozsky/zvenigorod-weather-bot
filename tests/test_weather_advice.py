@@ -219,6 +219,32 @@ class WeatherAdviceTests(unittest.TestCase):
                 )
                 self.assertEqual(result is not None, accepted)
 
+    def test_old_awkward_wording_and_activity_suggestions_are_rejected(self):
+        comments = (
+            "День будет пасмурным с местами дождём, зонт может пригодиться.",
+            "День будет пасмурным с местами небольшим дождём, зонт может пригодиться.",
+            "Дождь возможен вечером. Утро подойдёт для прогулки.",
+            "Возможен дождь. Лучше выбрать короткий маршрут или уютный дом.",
+            "Зонт может пригодиться. После можно заняться домашними делами.",
+            "Дождливо. Вечер подойдёт для любимых занятий дома.",
+        )
+        for comment in comments:
+            with self.subTest(comment=comment):
+                response = completion(json.dumps({"weather_advice": comment}))
+                result, _ = self.generate(lambda request: httpx.Response(200, json=response))
+                self.assertIsNone(result)
+
+    def test_concise_natural_weather_comments_are_accepted(self):
+        for comment in (
+            "День будет пасмурным, местами возможен дождь, зонт может пригодиться.",
+            "Днём пасмурно, возможен небольшой дождь, может пригодиться зонт.",
+            "К вечеру заметно похолодает. Пригодится тёплая куртка.",
+        ):
+            with self.subTest(comment=comment):
+                response = completion(json.dumps({"weather_advice": comment}))
+                result, _ = self.generate(lambda request: httpx.Response(200, json=response))
+                self.assertEqual(result, comment)
+
     def test_invalid_forecast_skips_network(self):
         invalid = [None, {}, dict(self.forecast, hourly=[]), dict(self.forecast, temp_min=float("nan")),
                    dict(self.forecast, date="2026-99-99"), dict(self.forecast, hourly=[{}])]

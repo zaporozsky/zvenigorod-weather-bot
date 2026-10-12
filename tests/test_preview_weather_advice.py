@@ -1,4 +1,6 @@
+import contextlib
 from datetime import date
+import io
 import json
 import os
 import unittest
@@ -71,18 +73,78 @@ class PreviewSafetyTests(unittest.TestCase):
         def factory(**kwargs):
             return real_client(transport=httpx.MockTransport(handler), **kwargs)
 
+        output = io.StringIO()
         with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}, clear=True), patch.object(
             preview, "OpenAIOnlyClient", side_effect=factory
-        ):
+        ), contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             results = preview.run_preview()
         self.assertEqual(len(requests), 6)
         self.assertEqual([result["http_status"] for result in results], [200, 200, 401, 200, 200, 200])
         self.assertEqual([result["status"] for result in results], ["generated", "generated", "failed", "generated", "generated", "generated"])
         self.assertEqual(results[2]["status"], "failed")
         self.assertIsNone(results[2]["comment"])
+        self.assertTrue(all("candidate_comment" not in result for result in results))
         self.assertNotIn("private-key", json.dumps(results))
         self.assertNotIn("test-key", json.dumps(results))
+        self.assertEqual(output.getvalue(), "")
         self.assertIs(httpx.Client, original_httpx_client)
+
+    def test_failed_validation_exposes_only_bounded_weather_comment_from_http_200(self):
+        real_client = preview.OpenAIOnlyClient
+        candidate = "Температура до +13°C, пригодится куртка."
+
+        def handler(request):
+            return httpx.Response(200, headers={"private": "header-secret"}, json={
+                "private": "response-secret",
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                    "weather_advice": candidate,
+                    "extra": "extra-secret",
+                })}}],
+            })
+
+        def factory(**kwargs):
+            return real_client(transport=httpx.MockTransport(handler), **kwargs)
+
+        output = io.StringIO()
+        with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}, clear=True), patch.object(
+            preview, "OpenAIOnlyClient", side_effect=factory
+        ), contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            results = preview.run_preview()
+        self.assertTrue(all(result["status"] == "failed" for result in results))
+        self.assertTrue(all(result["http_status"] == 200 for result in results))
+        self.assertTrue(all(result["candidate_comment"] == candidate for result in results))
+        self.assertEqual(output.getvalue(), "")
+        for value in ("test-key", "response-secret", "header-secret", "extra-secret"):
+            self.assertNotIn(value, json.dumps(results))
+
+    def test_candidate_capture_rejects_malformed_and_oversized_content(self):
+        invalid = [
+            {}, {"choices": []}, {"choices": [{"message": {"content": "not JSON"}}]},
+            {"choices": [{"message": {"content": "[]"}}]},
+            {"choices": [{"message": {"content": json.dumps({"weather_advice": 123})}}]},
+            {"choices": [{"message": {"content": json.dumps({"weather_advice": "а" * 501})}}]},
+            {"choices": [{"message": {"content": json.dumps({"weather_advice": "Куртка\u001b"})}}]},
+        ]
+        for body in invalid:
+            with self.subTest(body=body):
+                self.assertIsNone(preview.candidate_comment(httpx.Response(200, json=body)))
+        response = httpx.Response(200, json={"choices": [{"message": {
+            "content": json.dumps({"weather_advice": "а" * 500}),
+        }}]})
+        self.assertEqual(preview.candidate_comment(response), "а" * 500)
+
+    def test_main_exit_code_still_distinguishes_generated_and_failed_previews(self):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}, clear=True):
+            for status, exit_code in (("generated", 0), ("failed", 1)):
+                with self.subTest(status=status), patch.object(
+                    preview, "run_preview", return_value=[{"status": status}]
+                ), contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(preview.main(), exit_code)
+        with patch.dict(os.environ, {}, clear=True), patch.object(
+            preview, "run_preview"
+        ) as run, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(preview.main(), 1)
+            run.assert_not_called()
 
 
 if __name__ == "__main__":
