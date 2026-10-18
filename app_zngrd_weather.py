@@ -11,6 +11,7 @@ import random
 from datetime import datetime
 
 from telegram import Bot
+from telegram.error import BadRequest, Forbidden, InvalidToken, NetworkError, RetryAfter, TimedOut
 from weather_advice import generate_weather_advice
 
 
@@ -1327,7 +1328,7 @@ for test in test_conditions:
 
 
 
-def send_max_message(text, photo_path=None):
+def send_max_message(text, photo_path=None, *, chat_id):
 
     if photo_path:
         # 1. Получаем URL для загрузки изображения
@@ -1343,7 +1344,8 @@ def send_max_message(text, photo_path=None):
 
         with urllib.request.urlopen(
             upload_request,
-            context=ssl.create_default_context()
+            context=ssl.create_default_context(),
+            timeout=30
         ) as response:
             upload_info = json.loads(
                 response.read().decode("utf-8")
@@ -1365,7 +1367,8 @@ def send_max_message(text, photo_path=None):
 
         with urllib.request.urlopen(
             upload_request,
-            context=ssl.create_default_context()
+            context=ssl.create_default_context(),
+            timeout=30
         ) as response:
             raw_result = response.read().decode("utf-8")
 
@@ -1393,53 +1396,91 @@ def send_max_message(text, photo_path=None):
             "text": text
         }).encode("utf-8")
 
-    responses = []
+    url = f"https://platform-api2.max.ru/messages?chat_id={chat_id}"
 
-    for chat_id in (MAX_CHAT_ID, MAX_NEWS_CHAT_ID):
-        url = f"https://platform-api2.max.ru/messages?chat_id={chat_id}"
-
-        request = urllib.request.Request(
-            url,
-            data=data,
-            headers={
-                "Authorization": MAX_BOT_TOKEN,
-                "Content-Type": "application/json"
-            },
-            method="POST"
-        )
-
-        with urllib.request.urlopen(
-            request,
-            context=ssl.create_default_context()
-        ) as response:
-            responses.append(response.read().decode("utf-8"))
-
-    return responses
-async def send_post():
-
-    photo_path = get_weather_photo(
-        day_scenario
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": MAX_BOT_TOKEN,
+            "Content-Type": "application/json"
+        },
+        method="POST"
     )
 
-    async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+    with urllib.request.urlopen(
+        request,
+        context=ssl.create_default_context(),
+        timeout=30
+    ) as response:
+        return response.read().decode("utf-8")
 
-        for channel_id in (CHANNEL_ID, NEWS_CHANNEL_ID):
-            if photo_path:
-                with open(photo_path, "rb") as photo:
-                    await bot.send_photo(
-                        chat_id=channel_id,
-                        photo=photo,
-                        caption=post
-                    )
 
+def publication_error_category(exc):
+    # Never log exception text: it can contain tokens, URLs or response bodies.
+    if isinstance(exc, InvalidToken):
+        return "AUTHENTICATION_ERROR"
+    if isinstance(exc, Forbidden):
+        return "FORBIDDEN"
+    if isinstance(exc, RetryAfter):
+        return "RATE_LIMITED"
+    if isinstance(exc, BadRequest):
+        if "chat not found" in str(exc).lower():
+            return "CHAT_NOT_FOUND_OR_INACCESSIBLE"
+        return "BAD_REQUEST"
+    if isinstance(exc, urllib.error.HTTPError):
+        return {
+            400: "BAD_REQUEST", 401: "AUTHENTICATION_ERROR",
+            403: "FORBIDDEN", 404: "NOT_FOUND", 429: "RATE_LIMITED",
+        }.get(exc.code, "HTTP_ERROR")
+    if isinstance(exc, (TimedOut, TimeoutError)):
+        return "TIMEOUT_DELIVERY_UNKNOWN"
+    if isinstance(exc, (NetworkError, urllib.error.URLError)):
+        return "NETWORK_ERROR_DELIVERY_UNKNOWN"
+    if isinstance(exc, OSError):
+        return "IO_ERROR"
+    return "UNEXPECTED_ERROR"
+
+
+async def send_post():
+    photo_path = get_weather_photo(day_scenario)
+    destinations = (
+        ("telegram_primary", CHANNEL_ID),
+        ("telegram_news", NEWS_CHANNEL_ID),
+        ("max_primary", MAX_CHAT_ID),
+        ("max_news", MAX_NEWS_CHAT_ID),
+    )
+    failures = 0
+    for destination, chat_id in destinations:
+        try:
+            if destination.startswith("telegram_"):
+                # Include bot initialization and cleanup in this destination's boundary.
+                async with Bot(token=TELEGRAM_BOT_TOKEN) as bot:
+                    if photo_path:
+                        with open(photo_path, "rb") as photo:
+                            await bot.send_photo(
+                                chat_id=chat_id, photo=photo, caption=post
+                            )
+                    else:
+                        await bot.send_message(chat_id=chat_id, text=post)
             else:
-                await bot.send_message(
-                    chat_id=channel_id,
-                    text=post
-                )
+                send_max_message(post, photo_path, chat_id=chat_id)
+        except Exception as exc:
+            failures += 1
+            print(json.dumps({
+                "destination": destination, "result": "failure",
+                "category": publication_error_category(exc),
+            }), flush=True)
+        else:
+            print(json.dumps({
+                "destination": destination, "result": "success", "category": "OK",
+            }), flush=True)
+    print(json.dumps({
+        "publication_result": "failure" if failures else "success",
+        "attempted": len(destinations), "failed": failures,
+    }), flush=True)
+    return failures == 0
 
-    print("DEBUG: отправляем сообщение в MAX")
-    send_max_message(post, photo_path)
-    print("DEBUG: сообщение в MAX отправлено")
 
-asyncio.run(send_post())
+if not asyncio.run(send_post()):
+    raise SystemExit(1)
