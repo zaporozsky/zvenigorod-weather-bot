@@ -8,6 +8,7 @@ import json
 import ssl
 import certifi
 import random
+from weather_photo_selector import select_weather_photo
 from datetime import datetime
 
 from telegram import Bot
@@ -937,38 +938,12 @@ SNOWY_TEXTS = [
 ]
 
 def get_weather_photo(scenario):
-
-    folder_name = PHOTO_SCENARIOS.get(
-        scenario,
-        "default"
+    return select_weather_photo(
+        scenario=scenario,
+        photo_scenarios=PHOTO_SCENARIOS,
+        photo_dir=PHOTO_DIR,
+        manifest="photos/photo_seasons.csv",
     )
-
-    folder = os.path.join(
-        PHOTO_DIR,
-        folder_name
-    )
-
-    if not os.path.exists(folder):
-        folder = os.path.join(
-            PHOTO_DIR,
-            "default"
-        )
-
-    if not os.path.exists(folder):
-        return None
-
-    photos = [
-        os.path.join(folder, filename)
-        for filename in os.listdir(folder)
-        if filename.lower().endswith(
-            (".jpg", ".jpeg", ".png", ".webp")
-        )
-    ]
-
-    if not photos:
-        return None
-
-    return random.choice(photos)
 
 def get_editorial_text(scenario, forecast):
 
