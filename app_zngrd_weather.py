@@ -16,11 +16,6 @@ from telegram.error import BadRequest, Forbidden, InvalidToken, NetworkError, Re
 from weather_advice import generate_weather_advice
 
 
-TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
-MAX_BOT_TOKEN = os.environ["MAX_BOT_TOKEN"]
-MAX_CHAT_ID = os.environ["MAX_CHAT_ID"]
-MAX_NEWS_CHAT_ID = os.environ["MAX_NEWS_CHAT_ID"]
 
 CHANNEL_ID = -1004382412226
 NEWS_CHANNEL_ID = "@svoi_zvenigorod"
@@ -59,11 +54,11 @@ PHOTO_SCENARIOS = {
 def format_time_24(time):
     return datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
 
-def get_weather():
+def get_weather(days=1):
     params = urllib.parse.urlencode({
         "key": WEATHER_API_KEY,
         "q": LOCATION,
-        "days": 1,
+        "days": days,
         "lang": "ru",
     })
 
@@ -624,7 +619,6 @@ def get_weather_icon(condition, is_night=False):
 
     return "🌤️"
 
-print("\nТЕСТ ИКОНОК:")
 
 test_icons = [
     ("Ясно", False),
@@ -639,13 +633,6 @@ test_icons = [
     ("Туман", False),
 ]
 
-for condition, is_night in test_icons:
-    print(
-        condition,
-        "ночь" if is_night else "день",
-        "→",
-        get_weather_icon(condition, is_night)
-    )
 
 def get_period_weather(forecast):
     periods = {
@@ -822,41 +809,12 @@ def make_post(forecast):
 
     return post
 
-weather = get_weather()
 
-forecast = normalize_weather(weather)
 
-rain_analysis = analyze_rain(forecast)
 
-temperature_level = get_temperature_level(
-    forecast["temp_min"],
-    forecast["temp_max"]
-)
 
-day_scenario = get_day_scenario(
-    forecast,
-    rain_analysis
-)
 
-print("\n=== RAIN DIAGNOSTICS ===")
-print("Daily chance of rain:", forecast["chance_of_rain"])
-print("Total precipitation:", forecast["total_precip_mm"])
-print("Rain analysis:", rain_analysis)
-print("Day scenario:", day_scenario)
 
-for hour in forecast["hourly"]:
-    if (
-        hour["precip_mm"] > 0
-        or hour["chance_of_rain"] > 0
-        or "дожд" in hour["condition"].lower()
-    ):
-        print(
-            hour["time"],
-            "|",
-            hour["condition"],
-            "| precip:", hour["precip_mm"],
-            "| chance:", hour["chance_of_rain"]
-        )
 
 
 SUNNY_WARM_TEXTS = [
@@ -1008,16 +966,9 @@ def get_editorial_text(scenario, forecast):
 
 
 
-post = make_post(forecast)
 
-print("\nПОГОДА ПО ВРЕМЕНИ СУТОК:")
-print(get_period_weather(forecast))
 
-print("\n" + "=" * 60)
 
-print("\n" + "=" * 60)
-print("ТЕСТ ВЫБОРА СЦЕНАРИЕВ")
-print("=" * 60)
 
 test_conditions = [
     {
@@ -1198,9 +1149,6 @@ test_conditions = [
 ]
 
 
-print("\n" + "=" * 60)
-print("ТЕСТ ПОЧАСОВЫХ ОСАДКОВ")
-print("=" * 60)
 
 precipitation_tests = [
     {
@@ -1285,21 +1233,7 @@ precipitation_tests = [
     },
 ]
 
-for test in precipitation_tests:
-    timing = get_precipitation_timing(
-        {
-            "hourly": test["hourly"]
-        },
-        test["precipitation_type"]
-    )
 
-    print(f"\n{test['name']}:")
-    print(timing)
-
-for test in test_conditions:
-    scenario = get_day_scenario(test, {})
-
-    print(f"{test['name']}: {scenario}")
 
 
 
@@ -1417,8 +1351,12 @@ def publication_error_category(exc):
     return "UNEXPECTED_ERROR"
 
 
-async def send_post():
-    photo_path = get_weather_photo(day_scenario)
+_PHOTO_UNSET = object()
+
+
+async def send_post(text=None, *, selected_photo=_PHOTO_UNSET):
+    message = post if text is None else text
+    photo_path = get_weather_photo(day_scenario) if selected_photo is _PHOTO_UNSET else selected_photo
     destinations = (
         ("telegram_primary", CHANNEL_ID),
         ("telegram_news", NEWS_CHANNEL_ID),
@@ -1434,12 +1372,12 @@ async def send_post():
                     if photo_path:
                         with open(photo_path, "rb") as photo:
                             await bot.send_photo(
-                                chat_id=chat_id, photo=photo, caption=post
+                                chat_id=chat_id, photo=photo, caption=message
                             )
                     else:
-                        await bot.send_message(chat_id=chat_id, text=post)
+                        await bot.send_message(chat_id=chat_id, text=message)
             else:
-                send_max_message(post, photo_path, chat_id=chat_id)
+                send_max_message(message, photo_path, chat_id=chat_id)
         except Exception as exc:
             failures += 1
             print(json.dumps({
@@ -1457,5 +1395,187 @@ async def send_post():
     return failures == 0
 
 
-if not asyncio.run(send_post()):
-    raise SystemExit(1)
+
+
+def load_credentials():
+    global TELEGRAM_BOT_TOKEN, WEATHER_API_KEY, MAX_BOT_TOKEN, MAX_CHAT_ID, MAX_NEWS_CHAT_ID
+    TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+    WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
+    MAX_BOT_TOKEN = os.environ["MAX_BOT_TOKEN"]
+    MAX_CHAT_ID = os.environ["MAX_CHAT_ID"]
+    MAX_NEWS_CHAT_ID = os.environ["MAX_NEWS_CHAT_ID"]
+
+
+def run_v1():
+    global weather, forecast, rain_analysis, temperature_level, day_scenario, post
+    load_credentials()
+
+    print("\nТЕСТ ИКОНОК:")
+
+    for condition, is_night in test_icons:
+        print(
+            condition,
+            "ночь" if is_night else "день",
+            "→",
+            get_weather_icon(condition, is_night)
+        )
+
+    weather = get_weather()
+
+    forecast = normalize_weather(weather)
+
+    rain_analysis = analyze_rain(forecast)
+
+    temperature_level = get_temperature_level(
+        forecast["temp_min"],
+        forecast["temp_max"]
+    )
+
+    day_scenario = get_day_scenario(
+        forecast,
+        rain_analysis
+    )
+
+    print("\n=== RAIN DIAGNOSTICS ===")
+
+    print("Daily chance of rain:", forecast["chance_of_rain"])
+
+    print("Total precipitation:", forecast["total_precip_mm"])
+
+    print("Rain analysis:", rain_analysis)
+
+    print("Day scenario:", day_scenario)
+
+    for hour in forecast["hourly"]:
+        if (
+            hour["precip_mm"] > 0
+            or hour["chance_of_rain"] > 0
+            or "дожд" in hour["condition"].lower()
+        ):
+            print(
+                hour["time"],
+                "|",
+                hour["condition"],
+                "| precip:", hour["precip_mm"],
+                "| chance:", hour["chance_of_rain"]
+            )
+
+    post = make_post(forecast)
+
+    print("\nПОГОДА ПО ВРЕМЕНИ СУТОК:")
+
+    print(get_period_weather(forecast))
+
+    print("\n" + "=" * 60)
+
+    print("\n" + "=" * 60)
+
+    print("ТЕСТ ВЫБОРА СЦЕНАРИЕВ")
+
+    print("=" * 60)
+
+    print("\n" + "=" * 60)
+
+    print("ТЕСТ ПОЧАСОВЫХ ОСАДКОВ")
+
+    print("=" * 60)
+
+    for test in precipitation_tests:
+        timing = get_precipitation_timing(
+            {
+                "hourly": test["hourly"]
+            },
+            test["precipitation_type"]
+        )
+
+        print(f"\n{test['name']}:")
+        print(timing)
+
+    for test in test_conditions:
+        scenario = get_day_scenario(test, {})
+
+        print(f"{test['name']}: {scenario}")
+
+    return 0 if asyncio.run(send_post()) else 1
+
+
+def main(argv=None):
+    import argparse
+    from pathlib import Path
+    from zoneinfo import ZoneInfo
+
+    parser = argparse.ArgumentParser(description="Weather bot / offline V2 preparation")
+    parser.add_argument('--logic-version', choices=('v1', 'v2'),
+                        default=os.getenv('WEATHER_LOGIC_VERSION', 'v1'))
+    parser.add_argument('--v2-input', type=Path)
+    parser.add_argument('--publish-date')
+    parser.add_argument('--diagnostics-dir', type=Path)
+    args = parser.parse_args(argv)
+    if args.logic_version not in ('v1', 'v2'):
+        print('WEATHER_LOGIC: INVALID_VERSION', flush=True)
+        return 2
+    if args.logic_version == 'v1':
+        if args.v2_input or args.publish_date or args.diagnostics_dir:
+            parser.error('V2 options require --logic-version v2')
+        return run_v1()
+
+    from weather_v2_integration import (
+        PreparationBlocked, live_v2_ready, prepare_v2, save_snapshot,
+    )
+    from weather_v2_photo import select_v2_photo
+
+    offline = args.v2_input is not None
+    if not offline and not live_v2_ready():
+        print('WEATHER_V2: LIVE_BLOCKED_OPEN_RULES_OR_UNVERIFIED_CHAIN', flush=True)
+        return 2
+    if offline and args.publish_date is None:
+        parser.error('offline V2 requires --publish-date')
+    runtime_diagnostics = None
+    try:
+        if not offline:
+            if args.diagnostics_dir:
+                raise PreparationBlocked('PERSISTENT_DIAGNOSTICS_REQUIRES_MANAGED_RETENTION')
+            # Default live snapshots never outlive this invocation, including
+            # failed preparation/delivery. No artifact upload or log dump.
+            import tempfile
+            runtime_diagnostics = tempfile.TemporaryDirectory(prefix='weather-v2-diagnostics-')
+        # Read-only local preview requires neither credentials nor transport.
+        if offline:
+            with args.v2_input.open(encoding='utf-8') as stream:
+                payload = json.load(stream)
+        else:
+            load_credentials()
+            payload = get_weather(days=2)
+        publication_date = args.publish_date or datetime.now(ZoneInfo('Europe/Moscow')).date()
+        prepared = prepare_v2(payload, publication_date)
+        diagnostic_directory = args.diagnostics_dir or (runtime_diagnostics.name if runtime_diagnostics else None)
+        if diagnostic_directory:
+            save_snapshot(prepared, diagnostic_directory)
+        if prepared.blockers:
+            print(json.dumps({'weather_v2': 'blocked', 'categories': prepared.blockers}))
+            return 2
+        print(json.dumps({'weather_v2': 'prepared', 'offline': offline,
+                          'categories': prepared.diagnostics,
+                          'photo_reason': prepared.photo.reason}))
+        if offline:
+            print(prepared.rendered.text)
+            return 0
+        # Future authorized activation only. Same isolated sender and no retry.
+        photo = select_v2_photo(prepared.photo, PHOTO_SCENARIOS, photo_dir=PHOTO_DIR)
+        return 0 if asyncio.run(send_post(prepared.rendered.text, selected_photo=photo)) else 1
+    except PreparationBlocked as exc:
+        print(json.dumps({'weather_v2': 'blocked', 'category': exc.code}))
+        return 2
+    except Exception as exc:
+        # No raw exception text, request URL, provider body or credentials.
+        print(json.dumps({'weather_v2': 'failure', 'category': publication_error_category(exc)}))
+        return 2
+    finally:
+        if runtime_diagnostics is not None:
+            runtime_diagnostics.cleanup()
+
+
+if __name__ in ('__main__', '<run_path>'):
+    result = main(None if __name__ == '__main__' else [])
+    if result:
+        raise SystemExit(result)

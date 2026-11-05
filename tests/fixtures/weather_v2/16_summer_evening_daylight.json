@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "source": "synthetic_editorial_contract_1.1",
+  "scenario": 16,
+  "name": "summer_evening_daylight",
+  "publish_date": "2026-06-15",
+  "columns": [
+    "time",
+    "condition_code",
+    "temp_c",
+    "chance_of_rain",
+    "chance_of_snow",
+    "precip_mm",
+    "snow_cm",
+    "wind_kph",
+    "gust_kph",
+    "feelslike_c",
+    "is_day",
+    "cloud"
+  ],
+  "hours": [
+    ["2026-06-15 06:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 07:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 08:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 09:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 10:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 11:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 12:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 13:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 14:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 15:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 16:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 17:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 18:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 19:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 20:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 21:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 1, 0],
+    ["2026-06-15 22:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-15 23:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 00:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 01:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 02:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 03:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 04:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0],
+    ["2026-06-16 05:00", 1000, 20, 0, 0, 0, 0, 10, 15, 20, 0, 0]
+  ],
+  "expected": {
+    "periods": [
+      {
+        "hours": 6,
+        "known": 6,
+        "coverage": "complete",
+        "dominant": "clear",
+        "is_day": 1,
+        "temperature": {
+          "count": 6,
+          "minimum": 20,
+          "maximum": 20,
+          "median": 20,
+          "mode": "representative",
+          "representative": 20,
+          "rounded_minimum": null,
+          "rounded_maximum": null
+        },
+        "precip_mm": [
+          6,
+          0,
+          true
+        ],
+        "snow_cm": [
+          6,
+          0,
+          true
+        ],
+        "rain_probability": [
+          6,
+          0,
+          true
+        ],
+        "snow_probability": [
+          6,
+          0,
+          true
+        ],
+        "wind": [
+          10,
+          "none",
+          0,
+          0
+        ],
+        "gust": [
+          15,
+          "none",
+          0,
+          0
+        ],
+        "feelslike": [
+          6,
+          20,
+          20,
+          true
+        ],
+        "felt_colder_lengths": [],
+        "precipitation": [],
+        "strong_snow_hours": 0,
+        "hazards": []
+      },
+      {
+        "hours": 6,
+        "known": 6,
+        "coverage": "complete",
+        "dominant": "clear",
+        "is_day": 1,
+        "temperature": {
+          "count": 6,
+          "minimum": 20,
+          "maximum": 20,
+          "median": 20,
+          "mode": "representative",
+          "representative": 20,
+          "rounded_minimum": null,
+          "rounded_maximum": null
+        },
+        "precip_mm": [
+          6,
+          0,
+          true
+        ],
+        "snow_cm": [
+          6,
+          0,
+          true
+        ],
+        "rain_probability": [
+          6,
+          0,
+          true
+        ],
+        "snow_probability": [
+          6,
+          0,
+          true
+        ],
+        "wind": [
+          10,
+          "none",
+          0,
+          0
+        ],
+        "gust": [
+          15,
+          "none",
+          0,
+          0
+        ],
+        "feelslike": [
+          6,
+          20,
+          20,
+          true
+        ],
+        "felt_colder_lengths": [],
+        "precipitation": [],
+        "strong_snow_hours": 0,
+        "hazards": []
+      },
+      {
+        "hours": 6,
+        "known": 6,
+        "coverage": "complete",
+        "dominant": "clear",
+        "is_day": 1,
+        "temperature": {
+          "count": 6,
+          "minimum": 20,
+          "maximum": 20,
+          "median": 20,
+          "mode": "representative",
+          "representative": 20,
+          "rounded_minimum": null,
+          "rounded_maximum": null
+        },
+        "precip_mm": [
+          6,
+          0,
+          true
+        ],
+        "snow_cm": [
+          6,
+          0,
+          true
+        ],
+        "rain_probability": [
+          6,
+          0,
+          true
+        ],
+        "snow_probability": [
+          6,
+          0,
+          true
+        ],
+        "wind": [
+          10,
+          "none",
+          0,
+          0
+        ],
+        "gust": [
+          15,
+          "none",
+          0,
+          0
+        ],
+        "feelslike": [
+          6,
+          20,
+          20,
+          true
+        ],
+        "felt_colder_lengths": [],
+        "precipitation": [],
+        "strong_snow_hours": 0,
+        "hazards": []
+      },
+      {
+        "hours": 6,
+        "known": 6,
+        "coverage": "complete",
+        "dominant": "clear",
+        "is_day": 0,
+        "temperature": {
+          "count": 6,
+          "minimum": 20,
+          "maximum": 20,
+          "median": 20,
+          "mode": "representative",
+          "representative": 20,
+          "rounded_minimum": null,
+          "rounded_maximum": null
+        },
+        "precip_mm": [
+          6,
+          0,
+          true
+        ],
+        "snow_cm": [
+          6,
+          0,
+          true
+        ],
+        "rain_probability": [
+          6,
+          0,
+          true
+        ],
+        "snow_probability": [
+          6,
+          0,
+          true
+        ],
+        "wind": [
+          10,
+          "none",
+          0,
+          0
+        ],
+        "gust": [
+          15,
+          "none",
+          0,
+          0
+        ],
+        "feelslike": [
+          6,
+          20,
+          20,
+          true
+        ],
+        "felt_colder_lengths": [],
+        "precipitation": [],
+        "strong_snow_hours": 0,
+        "hazards": []
+      }
+    ],
+    "temp_jumps": [],
+    "unresolved_rules": []
+  }
+}
