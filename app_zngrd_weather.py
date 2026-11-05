@@ -18,7 +18,7 @@ from weather_advice import generate_weather_advice
 
 
 CHANNEL_ID = -1004382412226
-NEWS_CHANNEL_ID = "@svoi_zvenigorod"
+NEWS_CHANNEL_ID = "@svoi_novosti_zvenigorod"
 # Звенигород, Московская область
 CITY = "Звенигород"
 LOCATION = "55.7352,36.8553"
