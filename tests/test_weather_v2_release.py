@@ -416,7 +416,7 @@ class FullV2ChainTests(unittest.TestCase):
                         test.assertEqual(photo.read(),b'photo')
                         attempts.append('telegram_primary' if chat_id==-1004382412226 else 'telegram_news')
                         messages.append(caption)
-                        if chat_id=='@svoi_zvenigorod' and second_telegram_fails:
+                        if chat_id=='@svoi_novosti_zvenigorod' and second_telegram_fails:
                             raise BadRequest('Chat not found SECRET_CANARY https://secret')
                     async def send_message(self,**kwargs):
                         raise AssertionError('Approved matching photo must pass through the full chain')
