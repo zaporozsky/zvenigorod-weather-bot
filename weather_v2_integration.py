@@ -13,9 +13,9 @@ from weather_logic import Forecast, analyze_hours
 from weather_rendering import Ancillary, RenderedForecast, RenderingBlocked, render_forecast
 from weather_v2_photo import PhotoDecision, photo_scenario
 
-# Both are code gates, not environment overrides. This release cannot send V2.
-V2_LIVE_ENABLED = False
-V2_CHAIN_VERIFIED = False
+# Both are code gates, not environment overrides.
+V2_LIVE_ENABLED = True
+V2_CHAIN_VERIFIED = True
 
 
 class PreparationBlocked(ValueError):

@@ -51,4 +51,5 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           PHOTO_SEASON: ${{ vars.PHOTO_SEASON }}
+          WEATHER_LOGIC_VERSION: ${{ vars.WEATHER_LOGIC_VERSION || 'v1' }}
         run: python app_zngrd_weather.py

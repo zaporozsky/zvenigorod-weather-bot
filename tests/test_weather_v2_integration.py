@@ -160,11 +160,44 @@ class ApplicationTests(unittest.TestCase):
                 self.assertEqual(live_v2_ready(), enabled and verified and closed)
 
     def test_live_gate_blocks_before_credentials_forecast_or_transport(self):
-        self.assertFalse(live_v2_ready())
-        with patch.object(self.app,'load_credentials') as creds, patch.object(self.app,'get_weather') as weather, \
-             patch.object(self.app,'send_post') as send,contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(self.app.main(['--logic-version','v2']),2)
-            creds.assert_not_called();weather.assert_not_called();send.assert_not_called()
+        for enabled, verified, closed in itertools.product((False, True), repeat=3):
+            if enabled and verified and closed:
+                continue
+            with self.subTest(enabled=enabled, verified=verified, closed=closed), \
+                 patch('weather_v2_integration.V2_LIVE_ENABLED', enabled), \
+                 patch('weather_v2_integration.V2_CHAIN_VERIFIED', verified), \
+                 patch('weather_logic.OPEN_RULES', {} if closed else {'PENDING': 'question'}), \
+                 patch.object(self.app,'load_credentials') as creds, \
+                 patch.object(self.app,'get_weather') as weather, \
+                 patch.object(self.app,'send_post') as send,contextlib.redirect_stdout(io.StringIO()):
+                self.assertFalse(live_v2_ready())
+                self.assertEqual(self.app.main(['--logic-version','v2']),2)
+                creds.assert_not_called();weather.assert_not_called();send.assert_not_called()
+
+    def test_production_flags_are_active_with_closed_rules(self):
+        from weather_logic import OPEN_RULES
+        from weather_v2_integration import V2_CHAIN_VERIFIED, V2_LIVE_ENABLED
+        self.assertIs(V2_CHAIN_VERIFIED, True)
+        self.assertIs(V2_LIVE_ENABLED, True)
+        self.assertFalse(OPEN_RULES)
+        self.assertTrue(live_v2_ready())
+
+    def test_environment_v2_dispatch_uses_actual_active_gates(self):
+        payload, day = provider_payload(7)
+        for successful in (False, True):
+            with self.subTest(successful=successful), \
+                 patch.dict(os.environ, {'WEATHER_LOGIC_VERSION': 'v2'}, clear=True), \
+                 patch.object(self.app, 'load_credentials') as credentials, \
+                 patch.object(self.app, 'get_weather', return_value=payload) as weather, \
+                 patch.object(self.app, 'send_post', new_callable=AsyncMock, return_value=successful) as send, \
+                 patch.object(self.app, 'run_v1', side_effect=AssertionError('No resend/fallback')), \
+                 patch('weather_v2_photo.select_v2_photo', return_value=None), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertTrue(live_v2_ready())
+                self.assertEqual(self.app.main(['--publish-date', day]), 0 if successful else 1)
+                credentials.assert_called_once()
+                weather.assert_called_once_with(days=2)
+                send.assert_awaited_once_with(prepare_v2(payload, day).rendered.text, selected_photo=None)
 
     def test_cli_local_preview_and_snapshot_without_credentials_or_network(self):
         payload,day=provider_payload(7)
@@ -182,12 +215,16 @@ class ApplicationTests(unittest.TestCase):
             creds.assert_not_called();send.assert_not_called();weather.assert_not_called()
 
     def test_v1_default_and_explicit_rollback(self):
-        with patch.dict(os.environ,{},clear=True),patch.object(self.app,'run_v1',return_value=0) as v1:
-            self.assertEqual(self.app.main([]),0)
-            v1.assert_called_once()
-        with patch.dict(os.environ,{'WEATHER_LOGIC_VERSION':'v2'}),patch.object(self.app,'run_v1',return_value=0) as v1:
-            self.assertEqual(self.app.main(['--logic-version','v1']),0)
-            v1.assert_called_once()
+        for environment, args in (({}, []), ({'WEATHER_LOGIC_VERSION': 'v1'}, []),
+                                  ({'WEATHER_LOGIC_VERSION': 'v2'}, ['--logic-version', 'v1'])):
+            with self.subTest(environment=environment, args=args), \
+                 patch.dict(os.environ, environment, clear=True), \
+                 patch.object(self.app,'run_v1',return_value=0) as v1, \
+                 patch.object(self.app,'get_weather') as weather, \
+                 patch.object(self.app,'send_post') as send:
+                self.assertEqual(self.app.main(args),0)
+                v1.assert_called_once()
+                weather.assert_not_called();send.assert_not_called()
 
     def test_weather_request_defaults_one_and_prepared_two_days(self):
         requests=[]
