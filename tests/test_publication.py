@@ -92,8 +92,10 @@ class PublicationTests(unittest.TestCase):
             patch('urllib.request.urlopen', side_effect=urlopen),
             patch('httpx.Client', side_effect=AssertionError('Real HTTP forbidden')),
             patch('weather_advice.generate_weather_advice', return_value='Ясная погода.'),
-            patch('os.path.exists', return_value=photo),
-            patch('os.listdir', return_value=['offline-photo.jpg']),
+            # Isolate delivery from the season/approval/hash photo catalogue.
+            # Catalogue validation is tested independently with real temp files.
+            patch('weather_photo_selector.select_weather_photo',
+                  return_value='offline-photo.jpg' if photo else None),
             patch('random.choice', side_effect=lambda values: (
                 'offline-photo.jpg' if str(values[0]).endswith('.jpg') else values[0]
             )),

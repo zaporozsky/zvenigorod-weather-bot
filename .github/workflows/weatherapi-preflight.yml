@@ -1,0 +1,41 @@
+name: WeatherAPI V2 preflight without publishing
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weatherapi-v2-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reject reruns (no repeated API request)
+        env:
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [ "$RUN_ATTEMPT" != "1" ]; then
+            echo "PREFLIGHT_RERUN_BLOCKED"
+            exit 2
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check WeatherAPI and V2 (one forecast request, no publication)
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python weather_v2_preflight.py

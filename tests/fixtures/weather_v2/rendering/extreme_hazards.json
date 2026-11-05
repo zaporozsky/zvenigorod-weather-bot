@@ -1,0 +1,399 @@
+{
+  "source": "synthetic_release_budget_stress",
+  "publish_date": "2026-11-04",
+  "hours": [
+    {
+      "time": "2026-11-04 06:00",
+      "condition": {
+        "code": 1276
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 07:00",
+      "condition": {
+        "code": 1258
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0.2,
+      "chance_of_rain": 80,
+      "chance_of_snow": 80,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 08:00",
+      "condition": {
+        "code": 1198
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 09:00",
+      "condition": {
+        "code": 1147
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 10:00",
+      "condition": {
+        "code": 1117
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 11:00",
+      "condition": {
+        "code": 1237
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 12:00",
+      "condition": {
+        "code": 1276
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 13:00",
+      "condition": {
+        "code": 1258
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0.2,
+      "chance_of_rain": 80,
+      "chance_of_snow": 80,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 14:00",
+      "condition": {
+        "code": 1198
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 15:00",
+      "condition": {
+        "code": 1147
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 16:00",
+      "condition": {
+        "code": 1117
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 17:00",
+      "condition": {
+        "code": 1237
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 18:00",
+      "condition": {
+        "code": 1276
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 19:00",
+      "condition": {
+        "code": 1258
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0.2,
+      "chance_of_rain": 80,
+      "chance_of_snow": 80,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 20:00",
+      "condition": {
+        "code": 1198
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 21:00",
+      "condition": {
+        "code": 1147
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 22:00",
+      "condition": {
+        "code": 1117
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-04 23:00",
+      "condition": {
+        "code": 1237
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 00:00",
+      "condition": {
+        "code": 1276
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 01:00",
+      "condition": {
+        "code": 1258
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0.2,
+      "chance_of_rain": 80,
+      "chance_of_snow": 80,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 02:00",
+      "condition": {
+        "code": 1198
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 03:00",
+      "condition": {
+        "code": 1147
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 04:00",
+      "condition": {
+        "code": 1117
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    },
+    {
+      "time": "2026-11-05 05:00",
+      "condition": {
+        "code": 1237
+      },
+      "temp_c": -2,
+      "feelslike_c": -2,
+      "precip_mm": 0.2,
+      "snow_cm": 0,
+      "chance_of_rain": 80,
+      "chance_of_snow": 0,
+      "wind_kph": 35,
+      "gust_kph": 45,
+      "cloud": 80,
+      "is_day": 1
+    }
+  ],
+  "warning_kinds": [
+    "freezing_rain",
+    "heavy_rain",
+    "thunder",
+    "heavy_snow",
+    "freezing_fog",
+    "blizzard",
+    "ice_pellets"
+  ]
+}
